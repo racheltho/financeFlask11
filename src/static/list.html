@@ -1,0 +1,37 @@
+﻿<h1>Quantcast Campaigns</h1>
+
+<form class="form-search">
+    <div class="input-append">
+        <input type="text" ng-model="query" class="input-medium search-query" placeholder="Search">
+        <button ng-click="reset()" type="submit" class="btn"><i class="icon-search"></i></button>
+    </div>
+    <button ng-click="query=''; reset()" ng-disabled="!query" type="submit" class="btn">Reset</button>
+</form>
+
+<table class="table table-striped table-condensed table-hover">
+    <thead>
+        <th sorted="campaign">Campaign</th>
+        <th sorted="product">Product</th>
+        <th sorted="channel">Channel</th>
+        <th sorted="rep">Rep</th>
+        <th sorted="start_date">Start Date</th>
+        <th sorted="end_date">End Date</th>
+        <th sorted="contracted_impr">Contracted Impressions</th>
+        <th sorted="contracted_deal">Contracted Deal</th>
+        <th sorted="revised_deal">Revised Deal</th>
+        <th><a href="#/new"><i class="icon-plus-sign"></i></a></th>
+    </thead>
+    <tbody>
+        <tr ng-repeat="campaign in campaigns" id="item_{{campaign.id}}">
+            <td>{{campaign.campaign}}</td>
+            <td>{{campaign.product.product}}</td>
+            <td>{{campaign.channel}}</td>
+            <td>{{campaign.rep.last_name}} , {{ campaign.rep.first_name }}</td>
+            <td>{{campaign.start_date | date}}</td>
+            <td>{{campaign.end_date | date}}</td>
+			<td>{{campaign.contracted_impr | number }}</td>
+			<td>{{campaign.contracted_deal | currency}}</td>
+			<td>{{campaign.revised_deal | number }}</td>
+                    </tr>
+    </tbody>
+</table>

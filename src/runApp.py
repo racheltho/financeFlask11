@@ -1,5 +1,6 @@
-from models import db, app, Industry, ParentAgency
+from models import db, app, Industry, ParentAgency, Campaign, Advertiser
 import flask.ext.restless
+import datetime
 
 # Create the Flask-Restless API manager.
 
@@ -10,6 +11,8 @@ manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
 # default. Allowed HTTP methods can be specified as well.
 manager.create_api(Industry, methods=['GET', 'POST', 'DELETE', 'PUT'])
 manager.create_api(ParentAgency, methods=['GET','POST', 'DELETE', 'PUT'])
+manager.create_api(Campaign, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
+manager.create_api(Advertiser, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 
 # start the flask loop
 app.run()

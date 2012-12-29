@@ -1,0 +1,29 @@
+﻿<h2>{{btn_text}} Campaigns </h2>
+
+<form name="detailForm" class="form-horizontal">
+    <div class="control-group" ng-class="{error: detailForm.todo.$invalid}">
+        <label class="control-label" for="todo">Todo</label>
+        <div class="controls">
+            <input type="text" ng-model="item.todo" id="todo" placeholder="" required />
+            <span ng-show="detailForm.name.$error.required" class="help-inline">Required</span>
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.due.$invalid}">
+        <label class="control-label" for="due">Due</label>
+        <div class="controls">
+            <input type="text" jq-datepicker ng-model="item.due_date" id="due" placeholder="Date">
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.priority.$invalid}">
+        <label class="control-label" for="priority">Priority</label>
+        <div class="controls">
+            <input type="text" ng-model="item.priority" id="priority" placeholder="">
+        </div>
+    </div>
+    <div class="form-actions">
+        <button ng-click="save()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary">
+            {{btn_text}}
+        </button>
+        <a href="#/" class="btn">Cancel</a>
+    </div>
+</form>
