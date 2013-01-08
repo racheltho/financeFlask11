@@ -1,23 +1,114 @@
-﻿<h2>{{btn_text}} Campaigns </h2>
+﻿<h2>{{btn_text}} Campaign </h2>
 
 <form name="detailForm" class="form-horizontal">
-    <div class="control-group" ng-class="{error: detailForm.todo.$invalid}">
-        <label class="control-label" for="todo">Todo</label>
+    <div class="control-group" ng-class="{error: detailForm.campaign.$invalid}">
+        <label class="control-label" for="campaign">Campaign</label>
         <div class="controls">
-            <input type="text" ng-model="item.todo" id="todo" placeholder="" required />
+            <input type="text" ng-model="item.campaign" id="campaign" placeholder="" required />
             <span ng-show="detailForm.name.$error.required" class="help-inline">Required</span>
         </div>
     </div>
-    <div class="control-group" ng-class="{error: detailForm.due.$invalid}">
-        <label class="control-label" for="due">Due</label>
+    <div class="control-group" ng-class="{error: detailForm.type.$invalid}">
+        <label class="control-label" for="type">Type</label>
         <div class="controls">
-            <input type="text" jq-datepicker ng-model="item.due_date" id="due" placeholder="Date">
+        	<select ui-select2 ng-model="item.type" id="type" data-placeholder="-- Select One --">
+        	<option></option>
+            <option value="Perf LAL">Perf LAL</option>
+            <option value="Brand LAL">Brand LAL</option>
+            </select>
         </div>
     </div>
-    <div class="control-group" ng-class="{error: detailForm.priority.$invalid}">
-        <label class="control-label" for="priority">Priority</label>
+	    <div class="control-group" ng-class="{error: detailForm.product.$invalid}">
+        <label class="control-label" for="product">Product</label>
         <div class="controls">
-            <input type="text" ng-model="item.priority" id="priority" placeholder="">
+            <select ui-select2 ng-model="item.product_id" id="product">
+            	<option></option>
+    			<option ng-repeat="p in select_products" value="{{p.id}}">{{p.product}}</option>
+  			</select>
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.channel.$invalid}">
+        <label class="control-label" for="channel">Channel</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.channel" id="channel" data-placeholder="-- Select One --">
+            	<option></option>
+            	<option value="Direct">Direct</option>
+            	<option value="Direct UK">Direct UK</option>
+            	<option value="Inside">Inside</option>
+            	<option value="MSLAL">MSLAL</option>
+            	<option value="Publisher">Publisher</option>
+            </select>
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
+        <label class="control-label" for="advertiser">Advertiser</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.advertiser_id" id="advertiser" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="a in select_advertisers" value="{{a.id}}">{{a.advertiser}}</option>
+  			</select>
+        </div>
+    </div>
+
+    <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
+        <label class="control-label" for="rep">Representative</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.rep_id" id="rep" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
+  			</select>
+        </div>
+    </div>
+<!--<div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
+        <label class="control-label" for="rep">Representative</label>
+        <div class="controls">
+            <input ui-select2="select_reps" ng-model="item.rep_id" id="rep" />
+        </div>
+    </div>-->
+    <div class="control-group" ng-class="{error: detailForm.cp.$invalid}">
+        <label class="control-label" for="cp">CPA/CPM</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.cp" id="cp" data-placeholder="-- Select One --">
+            	<option></option>
+            	<option value="CPA">CPA</option>
+            	<option value="CPM">CPM</option>
+            </select>
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.cpm_price.$invalid}">
+        <label class="control-label" for="cpm_price">CPM price</label>
+        <div class="controls">
+            <input type="text" ng-model="item.cpm_price" id="cpm_price" placeholder="">
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.start.$invalid}">
+        <label class="control-label" for="due">Start Date</label>
+        <div class="controls">
+            <input type="text" jq-datepicker ng-model="item.start_date" id="start" placeholder="Date">
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.end.$invalid}">
+        <label class="control-label" for="due">End Date</label>
+        <div class="controls">
+            <input type="text" jq-datepicker ng-model="item.end_date" id="end" placeholder="Date">
+        </div>
+    </div>
+       <div class="control-group" ng-class="{error: detailForm.contracted_impr.$invalid}">
+        <label class="control-label" for="contracted_impr">Contracted Impressions</label>
+        <div class="controls">
+            <input type="text" ng-model="item.contracted_impr" id="contracted_impr" placeholder="">
+        </div>
+    </div>
+       <div class="control-group" ng-class="{error: detailForm.contracted_deal.$invalid}">
+        <label class="control-label" for="contracted_deal">Contracted Deal</label>
+        <div class="controls">
+            <input type="text" ng-model="item.contracted_deal" id="contracted_deal" placeholder="">
+        </div>
+    </div>
+       <div class="control-group" ng-class="{error: detailForm.revised_deal.$invalid}">
+        <label class="control-label" for="revised_deal">Revised Deal</label>
+        <div class="controls">
+            <input type="text" ng-model="item.revised_deal" id="revised_deal" placeholder="">
         </div>
     </div>
     <div class="form-actions">

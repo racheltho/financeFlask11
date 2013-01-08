@@ -68,7 +68,7 @@ class Campaign(db.Model):
     campaign = db.Column(db.Unicode)
     type = db.Column(db.Unicode)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
-    product = db.relationship('Product')
+    product = db.relationship('Product', lazy='joined')
     channel = db.Column(db.Unicode)    
     advertiser_id = db.Column(db.Integer, db.ForeignKey('advertiser.id'))
     advertiser = db.relationship('Advertiser')    
@@ -328,3 +328,11 @@ def cleanDB():
 #db.create_all()       
 #cleanDB()
 #populateDB()
+
+query = db.session.query(Campaign)
+#import pdb; pdb.set_trace()
+
+#field = getattr(Campaign, "rep")
+#field = getattr(field, "last_name")
+#direction = getattr(field, "asc")
+#query = query.order_by(direction())

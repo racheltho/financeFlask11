@@ -7,7 +7,7 @@
                 changeYear: true,
                 changeMonth: true,
                 dateFormat: 'yy-mm-dd',
-                maxDate: new Date(),
+                maxDate: '+10y',
                 yearRange: '2000:2020',
                 onSelect: function(dateText) {
                     scope.$apply(function(s) { ngModel.assign(s, dateText); });
@@ -26,7 +26,7 @@
     };
 
 })
-/*.directive('sorted', function () {
+.directive('sorted', function () {
     return {
         scope: true, transclude: true,
         template: '<a ng-click="do_sort()" ng-transclude></a>' +
@@ -43,4 +43,4 @@
             };
         }
     };
-});*/
+});
