@@ -50,18 +50,17 @@
           link: function($scope, $elm, $attr) {
             // Create the data table.
             var data = new google.visualization.DataTable();
-            data.addColumn('string', 'Topping');
-            data.addColumn('number', 'Slices');
+            data.addColumn('string', 'FY 2012');
+            data.addColumn('number', 'Revenue');
             data.addRows([
-              ['Mushrooms', 3],
-              ['Onions', 1],
-              ['Olives', 1],
-              ['Zucchini', 1],
-              ['Pepperoni', 2]
+              ['Q1', 17028],
+              ['Q2', 21443],
+              ['Q3', 23149],
+              ['Q4', 34000],
             ]);
 
             // Set chart options
-            var options = {'title':'How Much Pizza I Ate Last Night',
+            var options = {'title':'Revenue 2012',
                            'width':400,
                            'height':300,
                            };

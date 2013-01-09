@@ -6,6 +6,7 @@
            when('/new', { controller: CreateCtrl, templateUrl: 'detail.html' }).
            when('/revenue', { controller: RevenueCtrl, templateUrl: 'revenue.html' }).
            when('/dashboard', { controller: DashboardCtrl, templateUrl: 'dashboard.html' }).
+           when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
            otherwise({ redirectTo: '/' });
      });
 
@@ -114,35 +115,34 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 var RevenueCtrl = function ($scope, $routeParams, $location, Campaign, Booked, Actual) {
-
 };
 
 var DashboardCtrl = function ($scope, $routeParams, $location) {
-/*	google.load('visualization', '1.0', {
-		'packages' : ['corechart']
-	});
-
-	$scope.drawChart = function() {
-		//debugger;
-		// Create the data table.
-		var data = new google.visualization.DataTable();
-		data.addColumn('string', 'Topping');
-		data.addColumn('number', 'Slices');
-		data.addRows([['Mushrooms', 3], ['Onions', 1], ['Olives', 1], ['Zucchini', 1], ['Pepperoni', 2]]);
-
-		// Set chart options
-		var options = {
-			'title' : 'How Much Pizza I Ate Last Night',
-			'width' : 400,
-			'height' : 300
-		};
-
-		// Instantiate and draw our chart, passing in some options.
-		var chart = new google.visualization.BarChart($scope.chart_div);
-		chart.draw(data, options);
-	};
-	
-	$scope.drawChart();
-*/
 };
+
+
+var ApproveIOsCtrl = function($scope, $routeParams, $location, Campaign) {
+	var make_query = function() {
+		var q = {};
+		//var q = {order_by: [{field: $scope.sort_order, direction: $scope.sort_desc ? "desc": "asc"}]};
+		if ($scope.query) {
+			q.filters = [{
+				name : "campaign",
+				op : "like",
+				val : "%" + $scope.query + "%"
+			}];
+		}
+		return angular.toJson(q);
+	}
+	$scope.search = function() {
+		var res = Campaign.get({
+			q : make_query()
+		}, function() {
+			$scope.new_campaigns = res.objects;
+		})
+	};
+	$scope.search();
+}; 
+
+
 
