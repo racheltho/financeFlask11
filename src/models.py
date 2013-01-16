@@ -1,10 +1,13 @@
 import flask
-import sqlalchemy
+#import sqlalchemy
+from sqlalchemy import Table, Column, Integer, String, Text, DateTime, ForeignKey, create_engine
+from sqlalchemy.orm import relationship, sessionmaker
+#from sqlalchemy.ext.declarative import declarative_base
 import psycopg2
 import flask.ext.sqlalchemy
 import xlrd
 import re 
-import datetime
+from datetime import datetime, timedelta
 from xldate import xldate_as_tuple
 
 # Create the Flask application and the Flask-SQLAlchemy object.
@@ -12,35 +15,28 @@ app = flask.Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:qcsales@localhost/mydatabase'
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
-db.create_all()
 
 def get_or_create(session, model, **kwargs):
-    instance = session.query(model).filter_by(**kwargs).first()
-    if instance:
-        return instance
-    else:
-        instance = model(**kwargs)
-        session.add(instance)
-        return instance
+    for name, value in kwargs.items():
+        if value is None or value == "":
+            return None
+        else:
+            instance = session.query(model).filter_by(**kwargs).first()
+            if instance:
+                return instance
+            else:
+                instance = model(**kwargs)
+                session.add(instance)
+                return instance
     
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product = db.Column(db.Unicode, unique=True)
-   
-class Rep(db.Model):
+      
+class Channel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    repID = db.Column(db.Unicode, unique=True)
-    last_name = db.Column(db.Unicode)
-    first_name = db.Column(db.Unicode)
-    employeeID = db.Column(db.Unicode)
-    date_of_hire = db.Column(db.Date)
-    department = db.Column(db.Unicode)
-    channel = db.Column(db.Unicode)
-    manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    manager = db.relationship('Rep', remote_side=[id])
-    def name(self):
-        return u"%s, %s" % (self.last_name, self.first_name)
-
+    channel = db.Column(db.Unicode, unique=True)   
+         
 class Industry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sic = db.Column(db.Integer)
@@ -51,17 +47,22 @@ class Industry(db.Model):
         self.naics = naics
         self.industry_name = industry_name
    
-class ParentAgency(db.Model):
-    id = db.Column(db.Integer, primary_key=True)   
-    parent = db.Column(db.Unicode)
+#class ParentAgency(db.Model):
+#    id = db.Column(db.Integer, primary_key=True)   
+#    parent = db.Column(db.Unicode)
     
-class Advertiser(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    advertiser = db.Column(db.Unicode)
-    parent_agency_id = db.Column(db.Integer, db.ForeignKey('parent_agency.id'))
-    parent_agency = db.relationship('ParentAgency')
-    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'))
-    industry = db.relationship('Industry')
+#class Advertiser(db.Model):
+#    id = db.Column(db.Integer, primary_key=True)
+#    advertiser = db.Column(db.Unicode)
+#    parent_agency_id = db.Column(db.Integer, db.ForeignKey('parent_agency.id'))
+#    parent_agency = db.relationship('ParentAgency')
+#    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'))
+#    industry = db.relationship('Industry')
+
+association_table = db.Table('association', db.Model.metadata,
+    db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
+    db.Column('rep_id', db.Integer, db.ForeignKey('rep.id'))
+)
 
 class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -69,18 +70,25 @@ class Campaign(db.Model):
     type = db.Column(db.Unicode)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     product = db.relationship('Product', lazy='joined')
-    channel = db.Column(db.Unicode)    
-    advertiser_id = db.Column(db.Integer, db.ForeignKey('advertiser.id'))
-    advertiser = db.relationship('Advertiser')    
-    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    rep = db.relationship('Rep')
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
+    channel = db.relationship('Channel')  
+    advertiser = db.Column(db.Unicode)
+    industry = db.Column(db.Unicode)
+    agency = db.Column(db.Unicode)
+    sfdc_oid = db.Column(db.Integer, unique=True)    
+    # rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    # rep = db.relationship('Rep')
+    rep = relationship('Rep',secondary=association_table)
     cp = db.Column(db.Unicode)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     cpm_price = db.Column(db.Float)
     contracted_impr = db.Column(db.Integer)
+    booked_impr = db.Column(db.Integer)
+    delivered_impr = db.Column(db.Integer)
     contracted_deal = db.Column(db.Float)
     revised_deal = db.Column(db.Float)
+    opportunity = db.Column(db.Unicode)
     def get_absolute_url(self):
         return u"/note/%s/" % self.campaign
     def getBookedRev(self, myDate):
@@ -96,6 +104,20 @@ class Campaign(db.Model):
         else:  
             return 0
 
+class Rep(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    repID = db.Column(db.Unicode, unique=True)
+    last_name = db.Column(db.Unicode)
+    first_name = db.Column(db.Unicode)
+    employeeID = db.Column(db.Unicode)
+    date_of_hire = db.Column(db.Date)
+    department = db.Column(db.Unicode)
+    channel = db.Column(db.Unicode)
+    manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    manager = db.relationship('Rep', remote_side=[id])
+    def name(self):
+        return u"%s, %s" % (self.last_name, self.first_name)
+
 class Booked(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
@@ -110,207 +132,305 @@ class Actual(db.Model):
     date = db.Column(db.Date)    
     actualRev = db.Column(db.Float)    
 
+class Sfdc(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    oid = db.Column(db.Integer)
+    ioname = db.Column(db.Unicode)
+#    country = db.Column(db.Unicode)
+#    signedIO = db.Column(db.Unicode)
+#    setUp = db.Column(db.Unicode)
+#    agency = db.Column(db.Unicode)
+    cp = db.Column(db.Unicode)
+    channel = db.Column(db.Unicode)
+    advertiser = db.Column(db.Unicode)
+    owner_name = db.Column(db.Unicode)
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    budget = db.Column(db.Float)
+#    currency = db.Column(db.Unicode)
+
 # Create the database tables.
+
+def readSFDCexcel():
+    s = db.session
+    s.query(Sfdc).delete()
+    wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SFDC OID Report 1-7-13.xls')
+    sh = wb.sheet_by_index(0)
+    for colnum in range(0, sh.ncols):
+        colname = sh.cell(0, colnum).value
+        if re.search('Opportunity ID', colname):
+            oid_index = colnum
+        if re.search('Channel',colname):
+            channel_index = colnum
+        if re.search('Pricing Model', colname):
+            cp_index = colnum
+        if re.search('Advertiser',colname):
+            advertiser_index = colnum
+        if re.search('Opportunity Owner',colname):
+            rep_index = colnum   
+        if re.search('Start Date',colname):
+            start_index = colnum  
+        if re.search('End Date',colname):
+            end_index = colnum  
+        if re.search('Budget$',colname):
+            budget_index = colnum
+        if re.search('Insertion Order',colname):
+            ioname_index = colnum
+        if re.search('Currency',colname):
+            currency_index = colnum
+    for rownum in range(1,sh.nrows):
+        oid_val = sh.cell(rownum, oid_index).value
+        if oid_val is None or oid_val =='':
+            break
+        else:
+            oid = int(oid_val)
+            channel = sh.cell(rownum, channel_index).value
+            cp = sh.cell(rownum, cp_index).value
+            advertiser = sh.cell(rownum, advertiser_index).value
+            rep_name_temp  = sh.cell(rownum, rep_index).value
+            last = re.search('[A-Z][a-z]*$', rep_name_temp)
+            first = re.search('^[A-Z][a-z]*', rep_name_temp)
+            rep_name = last.group() + ", " + first.group()
+            start = xldate_as_tuple(sh.cell(rownum,start_index).value,0)[0:3]
+            py_start = datetime.date(*start) + timedelta(days=1)
+            end = xldate_as_tuple(sh.cell(rownum,end_index).value,0)[0:3]
+            py_end = datetime.date(*end)    
+            ioname = sh.cell(rownum, ioname_index).value          
+            budget_val = sh.cell(rownum, budget_index).value
+            currency = sh.cell(rownum, currency_index).value
+            if budget_val == '':
+                budget_val = None
+            a = Sfdc(oid=oid, channel=channel, cp=cp, advertiser=advertiser, owner_name = rep_name, start_date = py_start, end_date = py_end, budget = budget_val, ioname=ioname, currency=currency)
+            s.add(a)
+            s.commit()
+
 
 def populateDB():    
     # Create and fill Tables        
     wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData.xls')
-    wb.sheet_names()
-    sh = wb.sheet_by_name('Industry')     
-    for rownum in range(1,538): #sh.nrows):
-        sic = sh.cell(rownum,0).value
-        naics = sh.cell(rownum,1).value
-        industry = sh.cell(rownum,2).value            
-        if isinstance(sic,float):
-            sic = int(sic)
-        else:
-            sic = None 
-        if isinstance(naics,float):
-            naics = int(naics)
-        else:
-            naics = None    
-        a = Industry(sic, naics, industry)
-        db.session.add(a)
-    db.session.commit()
+    
+#    sh = wb.sheet_by_name('Channel')
+#    for rownum in range(0,4):
+#        chan = sh.cell(rownum,0).value
+#        c = Channel(channel = chan)
+#        db.session.add(c)
+#    db.session.commit()
+    
+    
+#    sh = wb.sheet_by_name('Industry')     
+#    for rownum in range(1,538): #sh.nrows):
+#        sic = sh.cell(rownum,0).value
+#        naics = sh.cell(rownum,1).value
+#        industry = sh.cell(rownum,2).value            
+#        if isinstance(sic,float):
+#            sic = int(sic)
+#        else:
+#            sic = None 
+#        if isinstance(naics,float):
+#            naics = int(naics)
+#        else:
+#            naics = None    
+#        a = Industry(sic, naics, industry)
+#        db.session.add(a)
+#    db.session.commit()
 #        print("sic: " + str(sic) + "   naics: " + str(naics) + "  industry:" + industry)        
     
-    sh = wb.sheet_by_name('AdvertiserParent')     
-    for rownum in range(0, 1074): #sh.nrows):
-        parent = sh.cell(rownum,0).value
-        a = ParentAgency(parent = parent)
-        db.session.add(a)
+#    sh = wb.sheet_by_name('AdvertiserParent')     
+#    for rownum in range(0, 1074): #sh.nrows):
+#        parent = sh.cell(rownum,0).value
+#        a = ParentAgency(parent = parent)
+#        db.session.add(a)
+#    
+#    db.session.commit()
+#    
+#    sh = wb.sheet_by_name('Advertiser')
+#     
+#    for rownum in range(1, sh.nrows):
+#        advertiser = sh.cell(rownum,0).value
+#        parent_name = sh.cell(rownum,1).value
+#        sic = sh.cell(rownum,2).value
+#        naics = sh.cell(rownum,3).value
+#        industry_name = sh.cell(rownum,4).value
+#        if re.match('[(#]', industry_name):
+#            industry = None
+#        else:
+#            if isinstance(sic,float):
+#                sic = int(sic)
+#            else:
+#                sic = None
+#            if isinstance(naics,float):
+#                naics = int(naics)
+#            else:
+#                naics = None
+#            industry =  get_or_create(db.session, Industry, sic = sic, naics = naics, industry_name = industry_name)  
+#        parent = get_or_create(db.session, ParentAgency, parent = parent_name)
+#        adv = get_or_create(db.session, Advertiser, advertiser = advertiser)
+#        adv.parent_agency = parent
+#        adv.industry = industry
+#        db.session.commit()
     
-    db.session.commit()
-    
-    sh = wb.sheet_by_name('Advertiser')
-     
-    for rownum in range(1, sh.nrows):
-        advertiser = sh.cell(rownum,0).value
-        parent_name = sh.cell(rownum,1).value
-        sic = sh.cell(rownum,2).value
-        naics = sh.cell(rownum,3).value
-        industry_name = sh.cell(rownum,4).value
-        if re.match('[(#]', industry_name):
-            industry = None
-        else:
-            if isinstance(sic,float):
-                sic = int(sic)
-            else:
-                sic = None
-            if isinstance(naics,float):
-                naics = int(naics)
-            else:
-                naics = None
-            industry =  get_or_create(db.session, Industry, sic = sic, naics = naics, industry_name = industry_name)  
-        parent = get_or_create(db.session, ParentAgency, parent = parent_name)
-        adv = get_or_create(db.session, Advertiser, advertiser = advertiser)
-        adv.parent_agency = parent
-        adv.industry = industry
-        db.session.commit()
-    
-    ###   Rep table    
-       
-    sh = wb.sheet_by_name('RepID')
-     
-    for rownum in range(1, 84):
-        repID = sh.cell(rownum,0).value
-        last_name = sh.cell(rownum,1).value
-        first_name = sh.cell(rownum,2).value
-        employeeID = sh.cell(rownum,3).value    
-        department = sh.cell(rownum,8).value  
-        channel = sh.cell(rownum,9).value    
-        if isinstance(employeeID, float):
-            employeeID = str(int(employeeID))
-        if isinstance(sh.cell(rownum,4).value, float):
-            try:
-                date_of_hire = datetime.date(int(sh.cell(rownum,5).value), int(sh.cell(rownum,6).value), int(sh.cell(rownum,7).value))
-            except:
-                date_of_hire = None
-        else:
-            date_of_hire = None    
-        try:
-            mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,10).value).first()
-        except:
-            mgr = None                      
-        a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, department = department, channel = channel, manager = mgr)
-        db.session.add(a)
-        db.session.commit()
+#    ###   Rep table    
+#       
+#    sh = wb.sheet_by_name('RepID')
+#     
+#    for rownum in range(1, 84):
+#        repID = sh.cell(rownum,0).value
+#        last_name = sh.cell(rownum,1).value
+#        first_name = sh.cell(rownum,2).value
+#        employeeID = sh.cell(rownum,3).value    
+#        department = sh.cell(rownum,8).value  
+#        channel = sh.cell(rownum,9).value    
+#        if isinstance(employeeID, float):
+#            employeeID = str(int(employeeID))
+#        if isinstance(sh.cell(rownum,4).value, float):
+#            try:
+#                date_of_hire = datetime.date(int(sh.cell(rownum,5).value), int(sh.cell(rownum,6).value), int(sh.cell(rownum,7).value))
+#            except:
+#                date_of_hire = None
+#        else:
+#            date_of_hire = None    
+#        try:
+#            mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,10).value).first()
+#        except:
+#            mgr = None                      
+#        a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, department = department, channel = channel, manager = mgr)
+#        db.session.add(a)
+#        db.session.commit()
+ 
+###  Segment Table
+ 
+ 
     
 ###  Campaign Table
 
     sh = wb.sheet_by_name('Campaign')
      
-    for rownum in range(1,sh.nrows):
-        campaign = sh.cell(rownum,0).value
-        t = sh.cell(rownum,1).value
-        product = get_or_create(db.session, Product, product = sh.cell(rownum,2).value)
-        channel = sh.cell(rownum,3).value
-        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,4).value)
-        rep = get_or_create(db.session, Rep, repID = sh.cell(rownum,5).value)
-        cp = sh.cell(rownum,6).value
-        if isinstance(sh.cell(rownum,7).value, float):
-            try:
-                start_date = datetime.date(int(sh.cell(rownum,7).value), int(sh.cell(rownum,8).value), int(sh.cell(rownum,9).value))
-            except:
-                start_date = None
+    for rownum in range(1,3115): #sh.nrows):
+        campaign = sh.cell(rownum,13).value
+        t = sh.cell(rownum,3).value
+        product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
+        channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,5).value)
+        advertiser = sh.cell(rownum,6).value
+        industry = sh.cell(rownum,8).value
+        agency = sh.cell(rownum,9).value
+        sfdc_oid = sh.cell(rownum,10).value
+        if not isinstance(sfdc_oid, float):
+            sfdc_oid = None
         else:
-            start_date = None  
-        if isinstance(sh.cell(rownum,10).value, float):
-            try:
-                end_date = datetime.date(int(sh.cell(rownum,10).value), int(sh.cell(rownum,11).value), int(sh.cell(rownum,12).value))
-            except:
-                end_date = None
-        else:
-            end_date = None    
-        cpm_price = sh.cell(rownum,13).value
+            sfdc_oid = int(sfdc_oid)
+        #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,4).value)
+        rep = get_or_create(db.session, Rep, repID = sh.cell(rownum,14).value)
+        cp = sh.cell(rownum,15).value
+        start = xldate_as_tuple(sh.cell(rownum,16).value,0)[0:3]
+        py_start = datetime.date(*start)
+        end = xldate_as_tuple(sh.cell(rownum,17).value,0)[0:3]
+        py_end = datetime.date(*end)              
+        cpm_price = sh.cell(rownum,19).value
         if not isinstance(cpm_price, float):  
             cpm_price = None
-        contracted_impr = sh.cell(rownum,14).value
+        contracted_impr = sh.cell(rownum,20).value
         if isinstance(contracted_impr, float):
             contracted_impr = int(contracted_impr)
         else:
             contracted_impr = None
-        contracted_deal = sh.cell(rownum,15).value
+        contracted_deal = sh.cell(rownum,21).value
         if not isinstance(contracted_deal, float):  
             contracted_deal = None    
-        revised_deal = sh.cell(rownum,16).value
+        revised_deal = sh.cell(rownum,23).value
         if not isinstance(revised_deal, float):  
-            revised_deal = None            
-        a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
-                     rep = rep, cp = cp, start_date = start_date, end_date = end_date, cpm_price = cpm_price, 
-                     contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
-        db.session.add(a)
-        db.session.commit()
-    
-    # Fill revenue tables
-    sh = wb.sheet_by_name('Actual')
-    for rownum in range(1,sh.nrows):
-        camp_str = sh.cell(rownum,0).value
-        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
-        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
-        channel = sh.cell(rownum,3).value
-        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
-        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
-        py_start = datetime.date(*start)
-        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
-        py_end = datetime.date(*end)              
-        try:
-            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
-            for colnum in range(7,sh.ncols):
-                rev = sh.cell(rownum,colnum).value
-                if isinstance(rev,float) and rev != 0.0: 
-                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                    pyDate = datetime.date(*mydate)
-                    a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
+            revised_deal = None
+        instance = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+        if instance:
+            instance.rep.append(rep)
+            db.session.commit()
+        else: 
+            if sfdc_oid == 11919:
+                instance = db.session.query(Campaign).filter_by(sfdc_oid = 11919).first()
+                if instance:
+                    instance.rep.append(rep)
+                    db.session.commit()
+                else:
+                    a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
+                                 industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
+                                 contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
                     db.session.add(a)
-        except:
-            try:
-                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, advertiser = advertiser, start_date = py_start, end_date = py_end).first()
-                for colnum in range(7,sh.ncols):                
-                    rev = sh.cell(rownum,colnum).value
-                    if isinstance(rev,float) and rev != 0.0:
-                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                        pyDate = datetime.date(*mydate)
-                        a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
-                        db.session.add(a)            
-            except:
-                pass
-    db.session.commit()
+                    db.session.commit()  
+            else:
+                a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
+                             industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
+                             contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
+                db.session.add(a)
+                db.session.commit()
     
-    sh = wb.sheet_by_name('Booked')
-    for rownum in range(1,sh.nrows):
-        camp_str = sh.cell(rownum,0).value
-        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
-        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
-        channel = sh.cell(rownum,3).value
-        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
-        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
-        py_start = datetime.date(*start)
-        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
-        py_end = datetime.date(*end)              
-        try:
-            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
-            for colnum in range(7,sh.ncols):
-                rev = sh.cell(rownum,colnum).value
-                if isinstance(rev,float) and rev != 0.0: 
-                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                    pyDate = datetime.date(*mydate)
-                    a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
-                    db.session.add(a)
-        except:
-            try:
-                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, advertiser = advertiser, start_date = py_start, end_date = py_end).first()
-                for colnum in range(7,sh.ncols):                
-                    rev = sh.cell(rownum,colnum).value
-                    if isinstance(rev,float) and rev != 0.0:
-                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                        pyDate = datetime.date(*mydate)
-                        a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
-                        db.session.add(a)            
-            except:
-                pass
-    db.session.commit()
-    
+#    # Fill revenue tables
+#    sh = wb.sheet_by_name('Actual')
+#    for rownum in range(1,sh.nrows):
+#        camp_str = sh.cell(rownum,0).value
+#        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
+#        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
+#        channel = sh.cell(rownum,3).value
+#        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
+#        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
+#        py_start = datetime.date(*start)
+#        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
+#        py_end = datetime.date(*end)              
+#        try:
+#            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
+#            for colnum in range(7,sh.ncols):
+#                rev = sh.cell(rownum,colnum).value
+#                if isinstance(rev,float) and rev != 0.0: 
+#                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
+#                    pyDate = datetime.date(*mydate)
+#                    a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
+#                    db.session.add(a)
+#        except:
+#            try:
+#                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, advertiser = advertiser, start_date = py_start, end_date = py_end).first()
+#                for colnum in range(7,sh.ncols):                
+#                    rev = sh.cell(rownum,colnum).value
+#                    if isinstance(rev,float) and rev != 0.0:
+#                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
+#                        pyDate = datetime.date(*mydate)
+#                        a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
+#                        db.session.add(a)            
+#            except:
+#                pass
+#    db.session.commit()
+#    
+#    sh = wb.sheet_by_name('Booked')
+#    for rownum in range(1,sh.nrows):
+#        camp_str = sh.cell(rownum,0).value
+#        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
+#        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
+#        channel = sh.cell(rownum,3).value
+#        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
+#        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
+#        py_start = datetime.date(*start)
+#        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
+#        py_end = datetime.date(*end)              
+#        try:
+#            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
+#            for colnum in range(7,sh.ncols):
+#                rev = sh.cell(rownum,colnum).value
+#                if isinstance(rev,float) and rev != 0.0: 
+#                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
+#                    pyDate = datetime.date(*mydate)
+#                    a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
+#                    db.session.add(a)
+#        except:
+#            try:
+#                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, advertiser = advertiser, start_date = py_start, end_date = py_end).first()
+#                for colnum in range(7,sh.ncols):                
+#                    rev = sh.cell(rownum,colnum).value
+#                    if isinstance(rev,float) and rev != 0.0:
+#                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
+#                        pyDate = datetime.date(*mydate)
+#                        a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
+#                        db.session.add(a)            
+#            except:
+#                pass
+#    db.session.commit()
+#    
     
 
 def cleanDB():
@@ -318,18 +438,27 @@ def cleanDB():
     s.query(Booked).delete()
     s.query(Actual).delete()
     s.query(Campaign).delete()    
-    s.query(Advertiser).delete()
     s.query(Rep).delete()
     s.query(Product).delete()
+    s.query(Channel).delete()
     s.query(Industry).delete()
-    s.query(ParentAgency).delete()
     s.commit()
 
-#db.create_all()       
+db.create_all()       
+#readSFDCexcel()
+
 #cleanDB()
+#db.session.query(Campaign).delete()
+#db.session.flush()
 #populateDB()
 
+#instance = db.session.query(Campaign).filter_by(sfdc_oid = 11384).first()
+#for rep in instance.rep:
+#    print(rep.name())
+
+
 query = db.session.query(Campaign)
+
 #import pdb; pdb.set_trace()
 
 #field = getattr(Campaign, "rep")

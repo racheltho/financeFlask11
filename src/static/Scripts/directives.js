@@ -43,7 +43,7 @@
             };
         }
     };
-})
+})/*
 .directive('chart', function() {
         return {
           restrict: 'A',
@@ -70,4 +70,32 @@
             chart.draw(data, options);
           }
       }
+})*/
+.directive('columnChart', function() {
+
+	return function(scope, element, attrs) {
+		
+		var chart = new google.visualization.ColumnChart(element[0]);
+		scope.$watch(attrs.columnChart, function(value) {
+		var data = google.visualization.arrayToDataTable(value);
+			var options = {
+					  title: attrs.chartTitle,
+					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'blue'}}
+			}
+			chart.draw(data, options);
+		});
+
+
+	}
+})
+.directive('chart', function() {
+    return {
+        restrict: 'E',
+        link: function(scope, elem, attrs) {
+            var data = scope[attrs.ngModel];
+            $.plot(elem, data, {});
+            elem.show();
+        }
+    };
 });
+;

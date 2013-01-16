@@ -1,0 +1,33 @@
+<h2>Create new campaigns from SFDC IOs</h2>
+
+<table class="table table-striped table-condensed table-hover">
+    <thead>
+    	<th>SFDC IO ID</th>
+    	<th>Name</th>
+    	<th>CPA/CPM</th>
+    	<th>Channel</th>
+    	<th>Advertiser</th>
+    	<th>Rep Name</th>
+    	<th>Start Date</th>
+    	<th>End Date</th>
+    	<th>Budget</th>
+    	
+        <th></th>
+    </thead>
+    <tbody>
+        <tr ng-repeat="sfdc in Sfdcs" id="item_{{sfdc.id}}">
+            <td> {{sfdc.oid}} </td>
+            <td> {{sfdc.ioname}} </td>
+            <td> {{sfdc.cp}} </td>
+            <td> {{sfdc.channel}} </td>
+            <td> {{sfdc.advertiser}} </td>
+            <td> {{sfdc.owner_name}} </td>
+            <td> {{sfdc.start_date | date}} </td>
+            <td> {{sfdc.end_date | date}} </td>
+            <td> {{sfdc.budget | currency}} </td>
+			<div><td><a href="#/edit/{{campaign.id}}"><button>Edit</button></a></td>
+            <td><button ng-click="save()">Save</button></td></div>
+            </tr>
+    </tbody>
+</table>
+<a href="" ng-click = "page = page + 1; search()" ng-show ="show_more()">Show more</a>
