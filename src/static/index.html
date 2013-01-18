@@ -20,6 +20,41 @@
 		<title>Finance Database</title>
 	</head>
 	<body>
+		<div class="navbar navbar-inverse navbar-fixed-top">
+			<div class="navbar-inner">
+				<div class="container">
+					<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </a>
+					<a class="brand" href="#">Quantcast Financial Database</a>
+					<div class="nav-collapse collapse">
+						<ul class="nav">
+							<li class="dropdown">
+								<a href="/" class="dropdown-toggle" data-toggle="dropdown">Records</a>
+								<ul class="dropdown-menu">
+									<li><a href="#/campaigns">Campaigns</a></li>
+									<li><a href="#/replist">Reps</a></li>
+								</ul>
+							</li>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown">Input from SalesForce</a>
+								<ul class="dropdown-menu">
+									<li><a href="#/approveIOs">Approve IOs</a></li>
+									<li><a href="#/newIOs">New IOs</a></li>
+								</ul>
+							</li>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown">Dashboard</a>
+								<ul class="dropdown-menu">
+									<li><a href="#/dashboard">Current</a></li>
+									<li><a href="#/dashboardHistorical">Historical</a></li>
+								</ul>
+							</li>
+						</ul>
+					</div><!--/.nav-collapse -->
+				</div>
+			</div>
+		</div>
+
+		
 		<div class="container">
 			<div ng-view></div>
 		</div>

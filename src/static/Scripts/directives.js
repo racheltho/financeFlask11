@@ -72,7 +72,6 @@
       }
 })*/
 .directive('columnChart', function() {
-
 	return function(scope, element, attrs) {
 		
 		var chart = new google.visualization.ColumnChart(element[0]);
@@ -84,8 +83,6 @@
 			}
 			chart.draw(data, options);
 		});
-
-
 	}
 })
 .directive('chart', function() {

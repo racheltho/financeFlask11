@@ -1,2 +1,10 @@
 
 thead.customTable {background-color: #E7E7E7;}
+
+body {
+	padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+}
+      
+.bottom-three {
+    margin-top: 3cm;
+}

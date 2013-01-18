@@ -1,0 +1,40 @@
+﻿<h1>Reps</h1>
+
+<form class="form-search">
+    <div class="input-append">
+        <input type="text" ng-model="query" class="input-medium search-query" placeholder="Search">
+        <button ng-click="reset()" type="submit" class="btn"><i class="icon-search"></i></button>    
+    </div>
+    <button ng-click="query=''; reset()" ng-disabled="!query" type="submit" class="btn">Reset</button>
+</form>
+
+<table class="table table-striped table-condensed table-hover">
+    <thead>
+        <th sorted="repID">Rep ID</th>
+        <th sorted="last_name">Last Name</th>
+        <th sorted="first_name">First Name</th>
+        <th sorted="employeeID">Employee ID</th>
+        <th sorted="date_of_hire">Date of Hire</th>
+<!--        <th sorted="rep.last_name">Rep</th>-->
+        <th sorted="department">Department</th>
+        <th sorted="channel">Channel</th>
+        <th sorted="manager">Manager</th>
+        <th><a href="#/newrep"><i class="icon-plus-sign"></i></a></th>
+    </thead>
+    <tbody>
+        <tr ng-repeat="rep in reps" id="item_{{rep.id}}">
+            <td>{{rep.repID}}</td>
+            <td>{{rep.last_name}}</td>
+            <td>{{rep.first_name}}</td>
+            <td>{{rep.employeeID}}</td>
+            <td>{{rep.date_of_hire | date}}</td>
+            <!-- <td>{{campaign.rep.last_name}}, {{ campaign.rep.first_name }}</td> -->
+            <td>{{rep.department}}</td>
+            <td>{{rep.channel}}</td>
+            <td>{{rep.manager.repID}}</td>
+			<td><a ng-click="delrep(rep.id)"><icon name="minus-sign" /></a>
+            	<a href="#/editrep/{{rep.id}}"><icon name="pencil" /></a></td>
+            </tr>
+    </tbody>
+</table>
+<a href="" ng-click = "page = page + 1; search()" ng-show ="show_more()">Show more</a>
