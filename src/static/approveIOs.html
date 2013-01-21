@@ -2,6 +2,7 @@
 
 <table class="table table-striped table-condensed table-hover">
     <thead>
+    	<th></th>
     	<th>SFDC IO ID</th>
     	<th>Name</th>
     	<th>CPA/CPM</th>
@@ -11,49 +12,36 @@
     	<th>Start Date</th>
     	<th>End Date</th>
     	<th>Budget</th>
-    	
-<!--        <th sorted="campaign">Campaign</th>
-        <th sorted="type">Type</th>
-        <th sorted="product">Product</th>
-        <th sorted="channel">Channel</th>
-        <th sorted="advertiser.advertiser">Advertiser</th>
-        <th sorted="rep.last_name">Rep</th>
-        <th sorted="cp">CPA/CPM</th>
-        <th sorted="start_date">Start Date</th>
-        <th sorted="end_date">End Date</th>
-		<th sorted="cpm_price">CPM price</th>
-        <th sorted="contracted_impr">Contracted Impressions</th>
-        <th sorted="contracted_deal">Contracted Deal</th>
-        <th sorted="revised_deal">Revised Deal</th> -->
-        <th></th>
+        <th></th><th></th>
     </thead>
-    <tbody>
-        <tr ng-repeat="sfdc in Sfdcs" id="item_{{sfdc.id}}">
-            <td> {{sfdc.oid}} </td>
-            <td> {{sfdc.ioname}} </td>
-            <td> {{sfdc.cp}} </td>
-            <td> {{sfdc.channel}} </td>
-            <td> {{sfdc.advertiser}} </td>
-            <td> {{sfdc.owner_name}} </td>
-            <td> {{sfdc.start_date | date}} </td>
-            <td> {{sfdc.end_date | date}} </td>
-            <td> {{sfdc.budget | currency}} </td>
-            <!--
-            <td>{{campaign.type}}</td>
-            <td>{{campaign.product.product}}</td>
-            <td>{{campaign.channel.channel}}</td>
-            <td>{{campaign.advertiser}}</td>
-            <!-- <td>{{campaign.rep.last_name}}, {{ campaign.rep.first_name }}</td> 
-            <td>{{campaign.cp}}</td>
-            <td>{{campaign.start_date | date}}</td>
-            <td>{{campaign.end_date | date}}</td>
-            <td>{{campaign.cpm_price | currency }}</td>
-			<td>{{campaign.contracted_impr | number }}</td>
-			<td>{{campaign.contracted_deal | currency}}</td>
-			<td>{{campaign.revised_deal | number }}</td>-->
-			<div><td><a href="#/edit/{{campaign.id}}"><button>Edit</button></a></td>
-            <td><button ng-click="approve(campaign.id)">Approve</button></td></div>
+    	<tbody ng-repeat="sfdc_camp in sfdc_camps" id="item_{{sfdc_camp.id}}">
+			<tr><td> SFDC: </td>
+            <td> {{sfdc_camp.oid}} </td>
+            <td> {{sfdc_camp.ioname}} </td>
+            <td> {{sfdc_camp.cp}} </td>
+            <td> {{sfdc_camp.channel}} </td>
+            <td> {{sfdc_camp.advertiser}} </td>
+            <td> {{sfdc_camp.owner_name}} </td>
+            <td> {{sfdc_camp.start_date | date}} </td>
+            <td> {{sfdc_camp.end_date | date}} </td>
+            <td> {{sfdc_camp.budget | currency}} </td>
+            <td></td><td></td></tr>
+            <tr ng-show="sfdc_camp.campaign"><td> Campaign: </td>
+            	<td> {{sfdc_camp.sfdc_oid}} </td>
+            	<td> {{sfdc_camp.campaign}} </td>
+            	<td> {{sfdc_camp.ccp }}</td>
+            	<td> {{sfdc_camp.channel.channel}}</td>
+            	<td> {{sfdc_camp.advertiser.advertiser }}</td>
+            	<td> {{sfdc_camp.last_name + ', ' + sfdc_camp.first_name }}</td>
+           	 	<td> {{sfdc_camp.cstart_date | date}}</td>
+            	<td> {{sfdc_camp.cend_date | date}}</td>
+            	<td> {{sfdc_camp.revised_deal | currency }}</td>
+				<div><td><a href="#/edit/{{campaign.id}}"><button>Edit</button></a></td>
+            	<td><button ng-click="approve(sfdc_camp.id)">Approve</button></td></div>
             </tr>
-    </tbody>
+            <tr ng-show="!sfdc_camp.campaign">
+            	<td style="text-align: right" colspan="11"> (No campaign) <a href="#/create/{{sfdc_camp.id}}"><button>Create</button></a></td>
+            </tr>
+            </tbody>
 </table>
 <a href="" ng-click = "page = page + 1; search()" ng-show ="show_more()">Show more</a>

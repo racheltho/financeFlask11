@@ -30,17 +30,13 @@
     <div class="control-group" ng-class="{error: detailForm.channel.$invalid}">
         <label class="control-label" for="channel">Channel</label>
         <div class="controls">
-            <select ui-select2 ng-model="item.channel" id="channel" data-placeholder="-- Select One --">
+            <select ui-select2 ng-model="item.channel_id" id="channel" data-placeholder="-- Select One --">
             	<option></option>
-            	<option value="Direct">Direct</option>
-            	<option value="Direct UK">Direct UK</option>
-            	<option value="Inside">Inside</option>
-            	<option value="MSLAL">MSLAL</option>
-            	<option value="Publisher">Publisher</option>
+            	<option ng-repeat="c in select_channels" value="{{c.id}}">{{c.channel}}</option>
             </select>
         </div>
     </div>
-    <!-- <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
+    <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
         <label class="control-label" for="advertiser">Advertiser</label>
         <div class="controls">
             <select ui-select2 ng-model="item.advertiser_id" id="advertiser" data-placeholder="-- Select One --">
@@ -48,12 +44,12 @@
     			<option ng-repeat="a in select_advertisers" value="{{a.id}}">{{a.advertiser}}</option>
   			</select>
         </div>
-    </div> -->
+    </div>
 
     <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
         <label class="control-label" for="rep">Representative</label>
         <div class="controls">
-            <select ui-select2 ng-model="item.rep_id" id="rep" data-placeholder="-- Select One --">
+            <select ui-select2 ng-model="item.rep" id="rep" data-placeholder="-- Select One --">
             	<option></option>
     			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
   			</select>

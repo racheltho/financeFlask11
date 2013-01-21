@@ -54,19 +54,22 @@
 	<table class="table table-striped table-bordered table-hover">
 		<thead>
 			<th>Channel</th>
-			<th></th>
-			<th>Q1</th>
-			<th>Q2</th>
-			<th>Q3</th>
-			<th>Q4</th>
+			<th>Type</th>
+			<th>Revenue</th>
 		</thead>
 		<tbody>
-			<tr><td rowspan="2">Direct</td><td>CPA</td><td></td><td></td><td></td><td></td></tr>
+			<tr ng-repeat="item in booked">
+				<td>{{item.channel}}</td>
+				<td>{{item.type}}</td>
+				<td>{{item.sum | currency}}</td>
+			</tr>
+<!--			<tr><td rowspan="2">Direct</td><td>CPA</td><td></td><td></td><td></td><td></td></tr>
 			<tr><td>CPM</td><td></td><td></td><td></td><td></td></tr>
 			<tr><td rowspan="2">Inside</td><td>CPA</td><td></td><td></td><td></td><td></td></tr>
 			<tr><td>CPM</td><td></td><td></td><td></td><td></td></tr>
 			<tr><td>UK</td><td>CPA</td><td></td><td></td><td></td><td></td></tr>
 			<tr><td></td><td>CPM</td><td></td><td></td><td></td><td></td></tr>
+		-->
 		</tbody>		
 	</table>
 	
@@ -93,7 +96,7 @@
 	</div>
 	<div class="span4">
 	<!-- <div chart></div> -->
-	<div column-chart="chartData" chart-title="Revenue" chart-haxis-title="Channel"></div>
+	<!--<div column-chart="chartData" chart-title="Revenue" chart-haxis-title="Channel"></div>-->
     <!-- <chart ng-model="data" style="width:600px;height:300px;"> </chart> -->
 	</div>
 </div>

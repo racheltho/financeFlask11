@@ -76,7 +76,8 @@
 		
 		var chart = new google.visualization.ColumnChart(element[0]);
 		scope.$watch(attrs.columnChart, function(value) {
-		var data = google.visualization.arrayToDataTable(value);
+			if (!value) return;
+			var data = google.visualization.arrayToDataTable(value);
 			var options = {
 					  title: attrs.chartTitle,
 					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'blue'}}

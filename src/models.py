@@ -1,14 +1,21 @@
 import flask
-#import sqlalchemy
+import json
+import sqlalchemy as a
 from sqlalchemy import Table, Column, Integer, String, Text, DateTime, ForeignKey, create_engine
-from sqlalchemy.orm import relationship, sessionmaker
-#from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker, column_property, backref
+from sqlalchemy.ext.declarative import declarative_base
+
 import psycopg2
 import flask.ext.sqlalchemy
 import xlrd
 import re 
 from datetime import date, timedelta
 from xldate import xldate_as_tuple
+
+from flask import jsonify
+from itertools import groupby, islice
+from operator import itemgetter
+from collections import defaultdict
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = flask.Flask(__name__)
@@ -47,22 +54,40 @@ class Industry(db.Model):
         self.naics = naics
         self.industry_name = industry_name
    
-#class ParentAgency(db.Model):
-#    id = db.Column(db.Integer, primary_key=True)   
-#    parent = db.Column(db.Unicode)
+class ParentAgency(db.Model):
+    id = db.Column(db.Integer, primary_key=True)   
+    parent = db.Column(db.Unicode)
     
-#class Advertiser(db.Model):
-#    id = db.Column(db.Integer, primary_key=True)
-#    advertiser = db.Column(db.Unicode)
-#    parent_agency_id = db.Column(db.Integer, db.ForeignKey('parent_agency.id'))
-#    parent_agency = db.relationship('ParentAgency')
-#    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'))
-#    industry = db.relationship('Industry')
+class Advertiser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    advertiser = db.Column(db.Unicode)
+    parent_agency_id = db.Column(db.Integer, db.ForeignKey('parent_agency.id'))
+    parent_agency = db.relationship('ParentAgency')
+    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'))
+    industry = db.relationship('Industry')
 
+'''
 association_table = db.Table('association', db.Model.metadata,
     db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
     db.Column('rep_id', db.Integer, db.ForeignKey('rep.id'))
-)
+)'''
+
+
+class Rep(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    repID = db.Column(db.Unicode, unique=True)
+    last_name = db.Column(db.Unicode)
+    first_name = db.Column(db.Unicode)
+    employeeID = db.Column(db.Unicode)
+    date_of_hire = db.Column(db.Date)
+    department = db.Column(db.Unicode)
+    channel = db.Column(db.Unicode)
+    manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    manager = db.relationship('Rep', remote_side=[id])
+    type = db.Column(db.Unicode)
+    product = db.Column(db.Unicode)
+    def name(self):
+        return u"%s, %s" % (self.last_name, self.first_name)
 
 class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -71,14 +96,16 @@ class Campaign(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     product = db.relationship('Product', lazy='joined')
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
-    channel = db.relationship('Channel')  
-    advertiser = db.Column(db.Unicode)
+    channel = db.relationship('Channel')
+    advertiser_id = db.Column(db.Integer, db.ForeignKey('advertiser.id'))
+    advertiser = db.relationship('Advertiser')
     industry = db.Column(db.Unicode)
     agency = db.Column(db.Unicode)
-    sfdc_oid = db.Column(db.Integer, unique=True)    
-    # rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    # rep = db.relationship('Rep')
-    rep = relationship('Rep',secondary=association_table)
+    sfdc_oid = db.Column(db.Integer)    ##  Would like to make this unique, but can't without resolving rep issue
+    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    rep = db.relationship('Rep')
+    # To allow multiple reps.  Right now, this is creating too many problems
+    # rep = relationship('Rep',secondary=association_table)
     cp = db.Column(db.Unicode)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
@@ -104,31 +131,17 @@ class Campaign(db.Model):
         else:  
             return 0
 
-class Rep(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    repID = db.Column(db.Unicode, unique=True)
-    last_name = db.Column(db.Unicode)
-    first_name = db.Column(db.Unicode)
-    employeeID = db.Column(db.Unicode)
-    date_of_hire = db.Column(db.Date)
-    department = db.Column(db.Unicode)
-    channel = db.Column(db.Unicode)
-    manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    manager = db.relationship('Rep', remote_side=[id])
-    def name(self):
-        return u"%s, %s" % (self.last_name, self.first_name)
-
 class Booked(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
-    campaign = db.relationship('Campaign')
+    campaign = db.relationship('Campaign', backref=backref("bookeds", cascade="all,delete"))
     date = db.Column(db.Date)
     bookedRev = db.Column(db.Float)
     
 class Actual(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
-    campaign = db.relationship('Campaign')    
+    campaign = db.relationship('Campaign', backref=backref("actuals", cascade="all,delete"))    
     date = db.Column(db.Date)    
     actualRev = db.Column(db.Float)    
 
@@ -147,10 +160,31 @@ class Sfdc(db.Model):
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     budget = db.Column(db.Float)
-#    currency = db.Column(db.Unicode)
+    currency = db.Column(db.Unicode)
+    approved = db.Column(db.Boolean)
 
 # Create the database tables.
 
+sfdc_table = Sfdc.__table__
+campaign_table = Campaign.__table__
+rep_table = Rep.__table__
+sfdc_campaign_join = sfdc_table.outerjoin(campaign_table.join(rep_table), sfdc_table.c.oid == campaign_table.c.sfdc_oid)
+
+# map to it
+class Sfdccampaign(db.Model):
+    __table__ = sfdc_campaign_join
+    __tablename__ = 'sfdccampaign'
+
+    rid = rep_table.c.id
+    rchannel = rep_table.c.channel
+    rtype = rep_table.c.type
+    cid = campaign_table.c.id
+    ccp = campaign_table.c.cp
+    cstart_date = campaign_table.c.start_date
+    cend_date = campaign_table.c.end_date
+    #cchannel = campaign_table.c.channel
+    #cadvertsier = campaign_table.c.advertiser
+    
 def readSFDCexcel():
     s = db.session
     s.query(Sfdc).delete()
@@ -200,7 +234,7 @@ def readSFDCexcel():
             currency = sh.cell(rownum, currency_index).value
             if budget_val == '':
                 budget_val = None
-            a = Sfdc(oid=oid, channel=channel, cp=cp, advertiser=advertiser, owner_name = rep_name, start_date = py_start, end_date = py_end, budget = budget_val, ioname=ioname, currency=currency)
+            a = Sfdc(oid=oid, channel=channel, cp=cp, advertiser=advertiser, owner_name = rep_name, start_date = py_start, end_date = py_end, budget = budget_val, ioname=ioname, currency=currency, approved = False)
             s.add(a)
             s.commit()
 
@@ -215,8 +249,8 @@ def populateDB():
 #        c = Channel(channel = chan)
 #        db.session.add(c)
 #    db.session.commit()
-    
-    
+#    
+#    
 #    sh = wb.sheet_by_name('Industry')     
 #    for rownum in range(1,538): #sh.nrows):
 #        sic = sh.cell(rownum,0).value
@@ -233,8 +267,8 @@ def populateDB():
 #        a = Industry(sic, naics, industry)
 #        db.session.add(a)
 #    db.session.commit()
-#        print("sic: " + str(sic) + "   naics: " + str(naics) + "  industry:" + industry)        
-    
+#
+#    
 #    sh = wb.sheet_by_name('AdvertiserParent')     
 #    for rownum in range(0, 1074): #sh.nrows):
 #        parent = sh.cell(rownum,0).value
@@ -268,39 +302,39 @@ def populateDB():
 #        adv.parent_agency = parent
 #        adv.industry = industry
 #        db.session.commit()
-    
+#    
 #    ###   Rep table    
 #       
 #    sh = wb.sheet_by_name('RepID')
 #     
-#    for rownum in range(1, 84):
+#    for rownum in range(1, 82):
 #        repID = sh.cell(rownum,0).value
 #        last_name = sh.cell(rownum,1).value
 #        first_name = sh.cell(rownum,2).value
 #        employeeID = sh.cell(rownum,3).value    
-#        department = sh.cell(rownum,8).value  
-#        channel = sh.cell(rownum,9).value    
+#        department = sh.cell(rownum,5).value  
+#        channel = sh.cell(rownum,6).value    
 #        if isinstance(employeeID, float):
 #            employeeID = str(int(employeeID))
 #        if isinstance(sh.cell(rownum,4).value, float):
 #            try:
-#                date_of_hire = datetime.date(int(sh.cell(rownum,5).value), int(sh.cell(rownum,6).value), int(sh.cell(rownum,7).value))
+#                date_tuple = xldate_as_tuple(sh.cell(rownum,4).value,0)[0:3]
+#                date_of_hire = date(*date_tuple)
 #            except:
 #                date_of_hire = None
 #        else:
 #            date_of_hire = None    
 #        try:
-#            mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,10).value).first()
+#            mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,7).value).first()
 #        except:
 #            mgr = None                      
-#        a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, department = department, channel = channel, manager = mgr)
+#        type = sh.cell(rownum,8).value
+#        product = sh.cell(rownum,9).value
+#        a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, department = department, channel = channel, manager = mgr, type=type, product=product)
 #        db.session.add(a)
 #        db.session.commit()
  
-###  Segment Table
- 
- 
-    
+
 ###  Campaign Table
 
     sh = wb.sheet_by_name('Campaign')
@@ -310,7 +344,7 @@ def populateDB():
         t = sh.cell(rownum,3).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
         channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,5).value)
-        advertiser = sh.cell(rownum,6).value
+        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
         industry = sh.cell(rownum,8).value
         agency = sh.cell(rownum,9).value
         sfdc_oid = sh.cell(rownum,10).value
@@ -318,7 +352,6 @@ def populateDB():
             sfdc_oid = None
         else:
             sfdc_oid = int(sfdc_oid)
-        #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,4).value)
         rep = get_or_create(db.session, Rep, repID = sh.cell(rownum,14).value)
         cp = sh.cell(rownum,15).value
         start_date = xldate_as_tuple(sh.cell(rownum,16).value,0)[0:3]
@@ -339,7 +372,8 @@ def populateDB():
         revised_deal = sh.cell(rownum,23).value
         if not isinstance(revised_deal, float):  
             revised_deal = None
-        instance = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+        # For multiple reps:
+        '''instance = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
         if instance:
             instance.rep.append(rep)
             db.session.commit()
@@ -359,8 +393,16 @@ def populateDB():
                 a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
                              industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
                              contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
+                print(campaign)
                 db.session.add(a)
-                db.session.commit()
+                db.session.commit() 
+                '''
+    
+        a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
+                     industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = rep, cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
+                     contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
+        db.session.add(a)
+        db.session.commit()
     
     # Fill revenue tables
     sh = wb.sheet_by_name('Actual')
@@ -430,34 +472,62 @@ def populateDB():
             except:
                 pass
     db.session.commit()
-    
-    
+    print("PopulateDB Finished")
+
 
 def cleanDB():
     s = db.session
+    s.query(Sfdc).delete()    
     s.query(Booked).delete()
     s.query(Actual).delete()
     s.query(Campaign).delete()    
     s.query(Rep).delete()
-    s.query(Product).delete()
+    s.query(Advertiser).delete()
+    s.query(ParentAgency).delete()
+    s.query(Industry).delete()    
     s.query(Channel).delete()
-    s.query(Industry).delete()
+    s.query(Product).delete()
     s.commit()
 
+def json_dict(o):
+    return json_obj([dict(d) for d in o])
+
+def json_obj(o):
+    return jsonify(dict(res=o))
+
+def get_sql(sql):
+    s = db.session
+    sql = a.text(sql)
+    res = s.execute(sql);
+    return  res.fetchall()
+
+def pivot_1(data):
+    cols = sorted(set(row[1] for row in data))
+    pivot = list((k, defaultdict(lambda: 0, (islice(d, 1, None) for d in data))) 
+             for k, data in groupby(data, itemgetter(0)))
+    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
+    return [['Key'] + cols] + res
+
 db.create_all()       
-#readSFDCexcel()
+
+
+'''
+data = get_sql('SELECT * FROM HistoricalCPM')
+res = pivot_1(data)
+print(json.dumps(list(res), indent=2))
+'''
 
 #cleanDB()
-#db.session.query(Campaign).delete()
 #db.session.flush()
 #populateDB()
+#readSFDCexcel()
 
 #instance = db.session.query(Campaign).filter_by(sfdc_oid = 11384).first()
 #for rep in instance.rep:
 #    print(rep.name())
 
 
-query = db.session.query(Campaign)
+#query = db.session.query(Campaign)
 
 #import pdb; pdb.set_trace()
 
@@ -465,3 +535,11 @@ query = db.session.query(Campaign)
 #field = getattr(field, "last_name")
 #direction = getattr(field, "asc")
 #query = query.order_by(direction())
+
+"""
+s = db.session
+sql = a.text('SELECT * FROM BookedRevenue')
+res = s.execute(sql);
+data =  res.fetchall()
+print json.dumps([dict(d) for d in data])
+"""
