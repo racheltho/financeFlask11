@@ -11,7 +11,7 @@
            when('/dashboard', { controller: DashboardCtrl, templateUrl: 'dashboard.html' }).
            when('/historical', { controller: HistDashboardCtrl, templateUrl: 'historical_dashboard.html' }).
            when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
-           when('/newIOs', { controller: NewIOsCtrl, templateUrl: 'newIOs.html' }).
+           when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
            when('/bookedRev/:campaignId', { controller: BookedRevCtrl, templateUrl: 'bookedRev.html' }).
            otherwise({ redirectTo: '/' });
      });
@@ -63,11 +63,7 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
     };
 
     $scope.del = function (id) {
-    	
-    	Booked.remove({campaign_id: id});
-    	
-    	Actual.remove({campaign_id: id});
-    	
+   	
         Campaign.remove({ id: id }, function () {
             $('#item_'+id).fadeOut();
         });
@@ -93,15 +89,35 @@ function DetailsBaseCtrl($scope, $location, Campaign, Rep, Advertiser, Product, 
 	 	});
 	};
 	
-	$scope.add_rep = function () { }
+	$scope.get_from_rep = function(){
+		var id = $scope.item.rep_id;
+		if (!id) return;
+    	Rep.get({ id: id }, function (item) {
+        	console.log(item);
+        	if (item.product_id) {
+	        	Product.get( {id: item.product_id}, function(p) {
+		        	if(p) $scope.item.product_id = p.id;
+	        	});
+	        }
+
+        	if (item.channel_id) {
+        		Channel.get( {id: item.channel_id}, function(c) {
+		        	if(c) $scope.item.channel_id = c.id;
+		        });
+	        }
+        	$scope.item.type = item.type;
+	    });		
+	}
 	
+	$scope.add_rep = function () { }
+		
 	get_sel_list(Rep, 'last_name', "select_reps");
 	get_sel_list(Advertiser, 'advertiser', "select_advertisers");
 	get_sel_list(Product, 'product', "select_products");
 	get_sel_list(Channel, 'channel', "select_channels");
 }; 
 
-var CreateCtrl = function ($scope, $location, Campaign, Rep, Advertiser, Product, $injector) { 
+var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Add';
@@ -111,8 +127,20 @@ var CreateCtrl = function ($scope, $location, Campaign, Rep, Advertiser, Product
     };
 
     $scope.save = function () {
+    	console.log($scope.item);
         Campaign.save($scope.item, function() { $location.path('/campaigns'); });
     };
+
+    $scope.sfdcid = $routeParams.fromsfdc;
+    
+	if ($scope.sfdcid) {
+		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
+			$.each(['campaign', 'rep_id', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
+			function(i,o) {
+				if(data[o]) $scope.item[o] = data[o];
+			});
+		});
+	}
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
@@ -121,6 +149,7 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
 
     var self = this;
     $scope.btn_text = 'Update';
+    $scope.sfdcid = $routeParams.fromsfdc;
 
     Campaign.get({ id: $routeParams.campaignId }, function (item) {
         self.original = item;
@@ -132,7 +161,10 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
     };
 
     $scope.save = function () {
-        Campaign.update({ id: $scope.item.id }, $scope.item, function() { $location.path('/campaigns'); });
+        Campaign.update({ id: $scope.item.id }, $scope.item, function() {
+        	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
+        	else {$location.path('/campaigns');} 
+        });
     };
     
     $scope.save_and_book = function () {
@@ -158,10 +190,6 @@ var BookedRevCtrl = function ($scope, $routeParams, $location, Campaign, Booked,
 
 
 var DashboardCtrl = function ($scope, $http) {
-/*
- 
-
- */	
  	$http.get('/api/bookeddata').success(function(data) {
  		//debugger;
  		$scope.booked = data.res;
@@ -170,8 +198,22 @@ var DashboardCtrl = function ($scope, $http) {
 
 var HistDashboardCtrl = function ($scope, $http) {
  	$http.get('/api/historicalcpm').success(function(data) {
- 		$scope.revdata = data.res;
+ 		d = data.res;
+ 		console.log(d);
+ 		$scope.cpm_keys = d[0].slice(1);
+ 		$scope.cpm_data = d.slice(1);
  	});
+ 	$http.get('/api/historicalcpa').success(function(data) {
+ 		$scope.cpadata = data.res;
+ 	});
+ 	$http.get('/api/count2011').success(function(data) {
+ 		$scope.cpadata = data.res;
+ 	});
+ 	$http.get('/api/count2012').success(function(data) {
+ 		$scope.cpadata = data.res;
+ 	});
+ 	
+ 	
 /* 	$http.get('/api/count2011').success(function(data) {
  		$scope.jsoncount2011 = data.res;
  	}).then(function() {
@@ -188,8 +230,6 @@ var HistDashboardCtrl = function ($scope, $http) {
  		$scope.jsoncount2012 = data.res; 		
  	});
  */	
- 	
- 	
  	$scope.germanyData = 100;
 	$scope.title = 'Revenue';
 	$scope.chartData = [$scope.x, $scope.y]; //[['', 'Germany', 'USA', 'Brazil', 'Canada', 'France', 'RU'],	['', $scope.germanyData, 300, 400, 500, 600, 800]];
@@ -200,13 +240,19 @@ var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, 
 	var make_query = function() {
         	var q = order_by("start_date", "asc");
             q.filters = [{name: "approved", op: "eq", val: false} ];
-            console.log(q);
         	return angular.toJson(q);
-    	}
+	};
     	
-    Sfdccampaign.get({q: make_query()}, function(items){
-		$scope.sfdc_camps = items.objects;
-	});
+    $scope.search = function () {
+        var res = Sfdccampaign.get(
+            { page: $scope.page, q: make_query(), results_per_page: 20 },
+            function () {
+                $scope.no_more = res.page == res.total_pages;
+                if (res.page==1) { $scope.sfdc_camps=[]; }
+                $scope.sfdc_camps = $scope.sfdc_camps.concat(res.objects);
+            }
+        );
+    };
 	
 	$scope.approve = function (id) {
         Sfdc.update({ id: id }, {approved:true}, function () {
@@ -218,24 +264,14 @@ var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, 
 
     $scope.reset = function() {
         $scope.page = 1;
-        $scope.list();
+        $scope.search();
     };
  
-    //$scope.reset();
+    $scope.reset();
 
-}; 
-
-var NewIOsCtrl = function($scope, $routeParams, $location, Campaign, Sfdc) {
-		
-	Sfdc.get(function(items){
-		$scope.Sfdcs = items.objects;
-	});
-	
-  
-    $scope.save = function () {
-        Campaign.save($scope.item, function() { $location.path('/'); });
-    };
-
+	if ($routeParams.approved) {
+		$scope.approve($routeParams.approved);
+	}
 }; 
 
 

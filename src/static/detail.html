@@ -1,5 +1,4 @@
 ﻿<h2>{{btn_text}} Campaign </h2>
-
 <form name="detailForm" class="form-horizontal">
     <div class="control-group" ng-class="{error: detailForm.campaign.$invalid}">
         <label class="control-label" for="campaign">Campaign</label>
@@ -8,20 +7,32 @@
             <span ng-show="detailForm.name.$error.required" class="help-inline">Required</span>
         </div>
     </div>
+    <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
+        <label class="control-label" for="rep">Representative</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.rep_id" id="rep" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
+  			</select>
+        <button  class="btn" ng-click="get_from_rep()">Get from Rep</button>
+        <br> <br>
+        <button  class="btn" ng-click="add_rep()">Add additional rep</button>
+        </div> 
+    </div>
     <div class="control-group" ng-class="{error: detailForm.type.$invalid}">
         <label class="control-label" for="type">Type</label>
         <div class="controls">
         	<select ui-select2 ng-model="item.type" id="type" data-placeholder="-- Select One --">
         	<option></option>
+        	<option value="Brand LAL">Brand LAL</option>
             <option value="Perf LAL">Perf LAL</option>
-            <option value="Brand LAL">Brand LAL</option>
             </select>
         </div>
     </div>
 	    <div class="control-group" ng-class="{error: detailForm.product.$invalid}">
         <label class="control-label" for="product">Product</label>
         <div class="controls">
-            <select ui-select2 ng-model="item.product_id" id="product">
+            <select ui-select2 ng-model="item.product_id" id="product" data-placeholder="-- Select One --">
             	<option></option>
     			<option ng-repeat="p in select_products" value="{{p.id}}">{{p.product}}</option>
   			</select>
@@ -46,16 +57,6 @@
         </div>
     </div>
 
-    <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
-        <label class="control-label" for="rep">Representative</label>
-        <div class="controls">
-            <select ui-select2 ng-model="item.rep" id="rep" data-placeholder="-- Select One --">
-            	<option></option>
-    			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
-  			</select>
-        <br> <br><button  class="btn" ng-click="add_rep()">Add additional rep</button>
-        </div> 
-    </div>
 <!--<div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
         <label class="control-label" for="rep">Representative</label>
         <div class="controls">

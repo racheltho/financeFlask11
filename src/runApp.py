@@ -1,4 +1,5 @@
 from models import *
+from db_utils import *
 
 import flask.ext.restless
 import datetime
@@ -23,6 +24,14 @@ manager.create_api(Sfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_p
 manager.create_api(Channel, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Sfdccampaign, methods=['GET'], results_per_page=20)
 
+
+
+@app.route('/api/campaign_from_sfdc/<int:sfdcid>')
+def get_campaign_from_sfdc(sfdcid):
+    c = sfdc_to_campaign(sfdcid, db.session)
+    return jsonify(c.as_dict())
+
+'''
 @app.route('/api/bookeddata')
 def get_bookeddata():
     data = get_sql('SELECT * FROM BookedRevenue')
@@ -32,7 +41,7 @@ def get_bookeddata():
 def get_historicaldata():
     data = get_sql('SELECT * FROM HistoricalRevenue')
     return json_dict(data)
-
+'''
 @app.route('/api/count2011')
 def get_count2011():
     data = get_sql('SELECT * FROM HistoricalCount2011')
@@ -43,11 +52,19 @@ def get_count2012():
     data = get_sql('SELECT * FROM HistoricalCount2012')
     return json_dict(data)
 
+
 @app.route('/api/historicalcpm')
 def get_historicalcpm():
     data = get_sql('SELECT * FROM HistoricalCPM')
     res = pivot_1(data)
     return json_obj(res)
+
+@app.route('/api/historicalcpa')
+def get_historicalcpa():
+    data = get_sql('SELECT * FROM HistoricalCPA')
+    res = pivot_1(data)
+    return json_obj(res)
+
 
 """
 data = get_sql('SELECT * FROM HistoricalCPM')
@@ -55,5 +72,9 @@ res = pivot_1(data)
 print json.dumps(list(res), indent=2)
 """
 
+print("Ready to run app")
+
 # start the flask loop
 app.run()
+
+

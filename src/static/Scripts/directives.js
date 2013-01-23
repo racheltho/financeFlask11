@@ -80,7 +80,8 @@
 			var data = google.visualization.arrayToDataTable(value);
 			var options = {
 					  title: attrs.chartTitle,
-					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'blue'}}
+					  titleTextStyle: {color: 'black', fontSize: '18'},
+					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'black', fontSize: '14'}}
 			}
 			chart.draw(data, options);
 		});

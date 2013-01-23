@@ -8,3 +8,10 @@ body {
 .bottom-three {
     margin-top: 3cm;
 }
+
+tbody.sfdccamp { border-bottom: 2px gray; }
+
+td.camp { 
+	text-align: right;
+	background-color: red;
+}

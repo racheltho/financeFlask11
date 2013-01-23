@@ -18,6 +18,7 @@
 <!--        <th sorted="rep.last_name">Rep</th>-->
         <th sorted="department">Department</th>
         <th sorted="channel">Channel</th>
+        <th sorted="channel">Product</th>
         <th sorted="manager">Manager</th>
         <th><a href="#/newrep"><i class="icon-plus-sign"></i></a></th>
     </thead>
@@ -30,9 +31,10 @@
             <td>{{rep.date_of_hire | date}}</td>
             <!-- <td>{{campaign.rep.last_name}}, {{ campaign.rep.first_name }}</td> -->
             <td>{{rep.department}}</td>
-            <td>{{rep.channel}}</td>
+            <td>{{rep.channel.channel}}</td>
+            <td>{{rep.product.product}}</td>
             <td>{{rep.manager.repID}}</td>
-			<td><a ng-click="delrep(rep.id)"><icon name="minus-sign" /></a>
+			<td><!--<a ng-click="del(rep.id)"><icon name="minus-sign" /></a> -->
             	<a href="#/editrep/{{rep.id}}"><icon name="pencil" /></a></td>
             </tr>
     </tbody>

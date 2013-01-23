@@ -57,11 +57,19 @@
   			</select>
         </div>
     </div>
-    
+    <div class="control-group" ng-class="{error: detailForm.channel.$invalid}">
+        <label class="control-label" for="product">Product</label>    
+        <div class="controls">
+            <select ui-select2 ng-model="item.product_id" id="product" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="c in select_products" value="{{c.id}}">{{c.product}}</option>
+  			</select>
+        </div>
+    </div>
     <div class="control-group" ng-class="{error: detailForm.type.$invalid}">
         <label class="control-label" for="managerID">Manager</label>
         <div class="controls">
-        	<select ui-select2 ng-model="item.managerID" id="managerID" data-placeholder="-- Select One --">
+        	<select ui-select2 ng-model="item.manager_id" id="managerID" data-placeholder="-- Select One --">
             	<option></option>
     			<option ng-repeat="m in select_reps" value="{{m.id}}">{{m.last_name + ", " + m.first_name}}</option>
   			</select>

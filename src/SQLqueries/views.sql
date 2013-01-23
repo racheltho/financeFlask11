@@ -1,15 +1,17 @@
-﻿CREATE OR REPLACE VIEW HistoricalCPM AS
+﻿CREATE OR REPLACE VIEW HistoricalCPA AS
 SELECT channel, cast (date_part('year', B.date) AS INT) as year, sum("actualRev") AS Actual
   FROM actual B
   JOIN campaign A
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
-  WHERE cp LIKE 'CPM'
+  WHERE cp LIKE 'CPA'
   GROUP BY channel, cast (date_part('year', B.date) AS INT)
   ORDER BY 1,2;
 
---SELECT * FROM HistoricalCPM;
+SELECT * FROM HistoricalCPM;
+SELECT * FROM HistoricalCPA;
+
 
 CREATE OR REPLACE VIEW HistoricalRevenue AS
 SELECT channel,  cp, sum(B."actualRev") AS y2011, sum(D."actualRev") AS y2012
@@ -25,14 +27,14 @@ SELECT channel,  cp, sum(B."actualRev") AS y2011, sum(D."actualRev") AS y2012
   ORDER BY channel, cp DESC;
 
 CREATE OR REPLACE VIEW HistoricalCount2011 AS
-SELECT channel, cp, count(A."advertiser_id") AS count2011
+
+SELECT channel, cp, , date_part('year', B.date) AS Year, count(A."advertiser_id")
   FROM campaign A
   JOIN actual B
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
- WHERE date_part('year', B.date) = 2011 
-  GROUP BY channel, A.cp
+  GROUP BY channel, A.cp, date_part('year', B.date)
   ORDER BY channel, A.cp DESC;
 
 CREATE OR REPLACE VIEW HistoricalCount2012 AS
