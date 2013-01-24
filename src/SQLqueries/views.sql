@@ -9,33 +9,44 @@ SELECT channel, cast (date_part('year', B.date) AS INT) as year, sum("actualRev"
   GROUP BY channel, cast (date_part('year', B.date) AS INT)
   ORDER BY 1,2;
 
-SELECT * FROM HistoricalCPM;
-SELECT * FROM HistoricalCPA;
-
-
-CREATE OR REPLACE VIEW HistoricalRevenue AS
-SELECT channel,  cp, sum(B."actualRev") AS y2011, sum(D."actualRev") AS y2012
+CREATE OR REPLACE VIEW HistoricalCPM AS
+SELECT channel, cast (date_part('year', B.date) AS INT) as year, sum("actualRev") AS Actual
   FROM actual B
   JOIN campaign A
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
-  JOIN actual D
-  ON A.id = D.campaign_id
- WHERE date_part('year', B.date) = 2011 AND date_part('year', D.date) = 2012
-  GROUP BY channel, cp
-  ORDER BY channel, cp DESC;
+  WHERE cp LIKE 'CPM'
+  GROUP BY channel, cast (date_part('year', B.date) AS INT)
+  ORDER BY 1,2;
 
-CREATE OR REPLACE VIEW HistoricalCount2011 AS
+SELECT * FROM HistoricalCPM;
+SELECT * FROM HistoricalCPA;
 
-SELECT channel, cp, , date_part('year', B.date) AS Year, count(A."advertiser_id")
+DROP VIEW HistoricalCount
+
+CREATE OR REPLACE VIEW HistoricalCount AS
+SELECT cp || channel, cast (date_part('year', B.date) AS INT) as year, count(A."advertiser_id")
   FROM campaign A
   JOIN actual B
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
-  GROUP BY channel, A.cp, date_part('year', B.date)
+  GROUP BY channel, A.cp, cast (date_part('year', B.date) AS INT)
   ORDER BY channel, A.cp DESC;
+
+SELECT * FROM HistoricalCount
+
+CREATE OR REPLACE VIEW HistoricalbyQ AS
+SELECT channel, cast (date_part('year', B.date) AS INT) as year, cast (date_part('quarter', B.date) AS INT) as quarter, sum("actualRev") AS Actual
+  FROM actual B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  GROUP BY channel, cast (date_part('year', B.date) AS INT), cast (date_part('quarter', B.date) AS INT)
+  ORDER BY 1,2,3;
+
 
 CREATE OR REPLACE VIEW HistoricalCount2012 AS
 SELECT channel, cp, count(A."advertiser_id") AS count2012

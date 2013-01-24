@@ -42,16 +42,11 @@ def get_historicaldata():
     data = get_sql('SELECT * FROM HistoricalRevenue')
     return json_dict(data)
 '''
-@app.route('/api/count2011')
-def get_count2011():
-    data = get_sql('SELECT * FROM HistoricalCount2011')
-    return json_dict(data)
-
-@app.route('/api/count2012')
-def get_count2012():
-    data = get_sql('SELECT * FROM HistoricalCount2012')
-    return json_dict(data)
-
+@app.route('/api/count')
+def get_count():
+    data = get_sql('SELECT * FROM HistoricalCount')
+    res = pivot_1(data)
+    return json_dict(res)
 
 @app.route('/api/historicalcpm')
 def get_historicalcpm():

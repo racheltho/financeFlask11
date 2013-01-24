@@ -8,6 +8,7 @@ from models import *
 from datetime import date
 
 def find_rep_db(name, s):
+    print(name)
     last,first = name.split(', ')
     res = s.query(Rep).filter_by(last_name=last)
     res = res.filter(Rep.first_name.ilike(first + '%')).first()
@@ -15,6 +16,8 @@ def find_rep_db(name, s):
         print(res.last_name)
         return res
     res = s.query(Rep).filter_by(last_name=last).first()
+    if(name == 'Bartlett, Valerie'):
+        res = s.query(Rep).filter_by(last_name="Vinco", first_name="Valerie").first()
     return res
 
 def id_or_none(o):

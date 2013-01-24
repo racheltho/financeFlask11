@@ -81,7 +81,7 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
    
 };
 
-function DetailsBaseCtrl($scope, $location, Campaign, Rep, Advertiser, Product, Channel) {
+function DetailsBaseCtrl($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
@@ -109,6 +109,13 @@ function DetailsBaseCtrl($scope, $location, Campaign, Rep, Advertiser, Product, 
 	    });		
 	}
 	
+	$scope.cancel = function() {
+		var path = '/campaigns';
+    	if($routeParams.fromsfdc) path = '/approveIOs';
+    	$location.path(path);
+	}
+	
+	
 	$scope.add_rep = function () { }
 		
 	get_sel_list(Rep, 'last_name', "select_reps");
@@ -117,7 +124,7 @@ function DetailsBaseCtrl($scope, $location, Campaign, Rep, Advertiser, Product, 
 	get_sel_list(Channel, 'channel', "select_channels");
 }; 
 
-var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
+var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Add';
@@ -127,8 +134,12 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
     };
 
     $scope.save = function () {
-    	console.log($scope.item);
-        Campaign.save($scope.item, function() { $location.path('/campaigns'); });
+    	var path = '/campaigns';
+    	if($scope.sfdcid){ 
+    		path = '/approveIOs'; 
+    		Sfdc.update({ id: $scope.sfdcid}, {approved:true} );
+    	}
+        Campaign.save($scope.item, function() { $location.path(path); });
     };
 
     $scope.sfdcid = $routeParams.fromsfdc;
@@ -140,7 +151,8 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
 				if(data[o]) $scope.item[o] = data[o];
 			});
 		});
-	}
+	};
+	
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
@@ -198,13 +210,14 @@ var DashboardCtrl = function ($scope, $http) {
 
 var HistDashboardCtrl = function ($scope, $http) {
  	$http.get('/api/historicalcpm').success(function(data) {
- 		d = data.res;
- 		console.log(d);
- 		$scope.cpm_keys = d[0].slice(1);
- 		$scope.cpm_data = d.slice(1);
+ 		$scope.cpm_chart = data.res;
+ 		$scope.cpm_keys = $scope.cpm_chart[0].slice(1);
+ 		$scope.cpm_data = $scope.cpm_chart.slice(1);
  	});
  	$http.get('/api/historicalcpa').success(function(data) {
- 		$scope.cpadata = data.res;
+ 		$scope.cpa_chart = data.res;
+ 		$scope.cpa_keys = $scope.cpa_chart[0].slice(1);
+ 		$scope.cpa_data = $scope.cpa_chart.slice(1);
  	});
  	$http.get('/api/count2011').success(function(data) {
  		$scope.cpadata = data.res;
@@ -239,7 +252,8 @@ var HistDashboardCtrl = function ($scope, $http) {
 var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, Sfdccampaign) {
 	var make_query = function() {
         	var q = order_by("start_date", "asc");
-            q.filters = [{name: "approved", op: "eq", val: false} ];
+            q.filters = [{name: "approved", op: "eq", val: false}];
+            if($scope.query) q.filters.push({name: "ioname", op: "ilike", val: "%" + $scope.query + "%"});
         	return angular.toJson(q);
 	};
     	

@@ -113,7 +113,7 @@
         <button ng-click="save()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary">
             {{btn_text}}
         </button>
-        <button ng-clik="save_and_book()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary"> {{btn_text}} and Book Revenue</button>        
-        <a href="#/campaigns" class="btn">Cancel</a>
+        <button ng-click="save_and_book()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary"> {{btn_text}} and Book Revenue</button>        
+        <button ng-click="cancel()" class="btn">Cancel</button>
     </div>
 </form>

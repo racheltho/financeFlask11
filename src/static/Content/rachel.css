@@ -15,3 +15,11 @@ td.camp {
 	text-align: right;
 	background-color: red;
 }
+
+td.rev {
+	text-align: right;
+}
+
+th.rev {
+	text-align: center;
+}
