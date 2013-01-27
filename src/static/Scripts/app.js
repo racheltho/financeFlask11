@@ -1,4 +1,6 @@
-﻿var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
+﻿"use strict";
+
+var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
      config(function ($routeProvider) {
          $routeProvider.
            when('/', { controller: HomeCtrl, templateUrl: 'home.html' }).
@@ -14,7 +16,7 @@
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
            when('/bookedRev/:campaignId', { controller: BookedRevCtrl, templateUrl: 'bookedRev.html' }).
            otherwise({ redirectTo: '/' });
-     });
+    });     
 
 $.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign'], 
 	function(i, s) {
@@ -23,6 +25,7 @@ $.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 
 		    { id: '@id' }, { update: { method: 'PUT' } });
 		});	
 	});
+
 
 var order_by = function(order, dir) {
 	return {order_by: [{field: order, direction: dir}]};
@@ -93,7 +96,6 @@ function DetailsBaseCtrl($scope, $location, $routeParams, Campaign, Rep, Adverti
 		var id = $scope.item.rep_id;
 		if (!id) return;
     	Rep.get({ id: id }, function (item) {
-        	console.log(item);
         	if (item.product_id) {
 	        	Product.get( {id: item.product_id}, function(p) {
 		        	if(p) $scope.item.product_id = p.id;
@@ -188,16 +190,85 @@ EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 
 var BookedRevCtrl = function ($scope, $routeParams, $location, Campaign, Booked, Actual) {
-    Campaign.get({ id: $routeParams.campaignId }, function (c_item) {
+	var b_completed = false;
+	var c_completed = false;
+	
+   Campaign.get({ id: $routeParams.campaignId }, function (c_item) {
         self.original = c_item;
         $scope.c_item = new Campaign(c_item);
+        c_completed = true;
+        construct_dates(c_completed, b_completed);
     });	
     
-    Booked.get({ campaign_id: $routeParams.campaignId }, function (b_item) {
-        self.original = b_item;
-        $scope.bookeds = new Campaign(b_item);
-    });	
+    var make_query = function() {
+        var q = order_by("date", "asc");
+        q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId}];
+     	return angular.toJson(q);
+	};
     
+    Booked.get({ q: make_query()}, function (items) {
+        $scope.bookeds = items.objects;
+        $scope.datearray = []; 
+        $scope.valuearray = [];
+        $.each($scope.bookeds, function(i,o) { $scope.datearray[i] = o.date; $scope.valuearray[i] = o.bookedRev;});
+        console.log($scope.bookeds);
+        b_completed = true;
+        construct_dates(c_completed, b_completed);
+    });
+
+	var construct_date_array = function(start_str, end_str){
+		start_YM = string_to_YM(start_str);
+		
+	}
+
+
+	var construct_dates = function(c, b){
+		
+	var string_to_date = function(str){
+		return new Date(str);
+	}
+
+	var string_to_YM = function(str){
+		var myDate = new Date(str);
+		y = myDate.getFullYear();
+		m = myDate.getMonth();
+		return [y, m];
+	}
+
+	var YM_to_date = function(ym_array){
+		return new Date(ym_array[0], ym_array[1]);
+	}
+
+   		if(c && b){
+   			var start; var end;
+   			if($.inArray($scope.c_item.start_date, $scope.datearray) >= 0){ start = $scope.datearray[0]; }
+   			else{ start = $scope.c_item.start_date; }
+   			if($.inArray($scope.c_item.end_date, $scope.datearray) >= 0){ end = $scope.datearray[$scope.datearray.length-1]; }
+   			else{ end = $scope.c_item.end_date; }
+   			$scope.myStart = new Date(start);
+   			$scope.myEnd = new Date(end);
+   			$scope.days_to_run = ($scope.myEnd - $scope.myStart)/1000/60/60/24;
+   			
+   			debugger;
+   		}
+	}
+   
+
+   //if(b_completed && c_completed){ console.log('Good Job Rachel');}
+   
+   /*
+   $scope.c_item = Campaign.get({id: $routeParams.campaignId });
+
+   
+	
+    	
+    Booked.get({q: make_query()}, function(items){
+    	$scope.bookeds = items;
+    	console.log($scope.bookeds);	
+    });
+	*/
+   
+       
 };
 
 
@@ -219,33 +290,31 @@ var HistDashboardCtrl = function ($scope, $http) {
  		$scope.cpa_keys = $scope.cpa_chart[0].slice(1);
  		$scope.cpa_data = $scope.cpa_chart.slice(1);
  	});
- 	$http.get('/api/count2011').success(function(data) {
- 		$scope.cpadata = data.res;
+ 	$http.get('/api/historicalbyq').success(function(data) {
+ 		$scope.hbyq_chart = data.res;
+ 		$scope.hbyq_keys = $scope.hbyq_chart[0].slice(1);
+ 		$scope.hbyq_data = $scope.hbyq_chart.slice(1);
  	});
- 	$http.get('/api/count2012').success(function(data) {
- 		$scope.cpadata = data.res;
+ 	$http.get('/api/count').success(function(data) {
+ 		$scope.count_chart = data.res;
+ 		$scope.count_keys = $scope.count_chart[0].slice(1);
+ 		var myslice = $scope.count_chart.slice(1);
+ 		$scope.count_data = []; 
+ 		$.each(myslice, function(i,o){ $scope.count_data[i] = o[0].split('|').concat(o.slice(1));});
  	});
- 	
- 	
-/* 	$http.get('/api/count2011').success(function(data) {
- 		$scope.jsoncount2011 = data.res;
- 	}).then(function() {
- 		$scope.count2011 = [];
- 		$scope.x = [];
- 		$scope.y = []; 
-		$.each($scope.jsoncount2011, function(i, obj) {
-    		$scope.count2011.push([obj.cp.value, obj.count2011.value]);
-    		$scope.x.push([obj.cp.value]);
-    		$scope.y.push([obj.count2011.value])
-		});
-	});
- 	$http.get('/api/count2012').success(function(data) {
- 		$scope.jsoncount2012 = data.res; 		
- 	});
- */	
- 	$scope.germanyData = 100;
+
+	// return true if item at this index is the same as the last one 	
+ 	$scope.channel = function(index) {
+ 		if(index == 0 || !$scope.count_data[index]) {return true;}
+ 		else if($scope.count_data[index-1][0] == $scope.count_data[index][0]) {return false;}
+ 		else {return true;}
+ 	};
+ 	$scope.spanamt = function(index) {
+ 		return $scope.channel(index+1) ? 1 : 2;
+ 	}
+
 	$scope.title = 'Revenue';
-	$scope.chartData = [$scope.x, $scope.y]; //[['', 'Germany', 'USA', 'Brazil', 'Canada', 'France', 'RU'],	['', $scope.germanyData, 300, 400, 500, 600, 800]];
+	$scope.chartData = [$scope.x, $scope.y]; 
  	//$scope.data = $scope.count2011; //[[[0, 1], [1, 5], [2, 2]]];
 };
 

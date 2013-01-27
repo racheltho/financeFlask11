@@ -10,7 +10,7 @@
 		<tbody>
 			<tr ng-repeat="item in cpm_data">
 				<td>{{item[0]}}</td>
-				<td ng-repeat="cell in item.slice(1)" class="rev">{{cell | currency}}</td>
+				<td ng-repeat="cell in item.slice(1)" class="rev">{{cell | myCurrency }}</td>
 			</tr>
 		</tbody>		
 	</table>
@@ -24,41 +24,45 @@
 		<tbody>
 			<tr ng-repeat="item in cpa_data">
 				<td>{{item[0]}}</td>
-				<td ng-repeat="cell in item.slice(1)" class="rev">{{cell | currency}}</td>
+				<td ng-repeat="cell in item.slice(1)" class="rev">{{cell | myCurrency }}</td>
 			</tr>
-		</tbody>		
-	</table>
-	
-	<h4>Client Count</h4>
-	<table class="table table-striped table-bordered table-hover">
-		<thead>
-			<th colspan="2">Channel</th>
-			<th>2011</th>
-			<th>2012</th>
-		</thead>
-		<tbody>
-			<tr><td rowspan="2">Direct</td><td>CPM</td><td>{{ count2011[1] }}</td><<td></td></tr>
-			<tr><td>CPA</td><td></td><td></td></tr>
-			<tr><td rowspan="2">Inside</td><td>CPM</td><td></td><td></td></tr>
-			<tr><td>CPA</td><td></td><td></td></tr>
-			<tr><td>UK</td><td>CPM</td><td></td><td></td></tr>
 		</tbody>		
 	</table>
 	
 	</div>
 	
-
 	<div class="span6">
 	<!-- <div chart></div> -->
-	<div column-chart="cpm_chart" chart-title="CPM Revenue" chart-haxis-title="Channel"></div>
+	<div column-chart="cpm_chart" chart-title="CPM Revenue" chart-haxis-title="Channel" ></div>
 	
 	<div column-chart="cpa_chart" chart-title="CPA Revenue" chart-haxis-title="Channel"></div>
  <!--   <chart ng-model="data" style="width:300px;height:200px;"> </chart> -->
 
 	</div>
 
-
+	<h4>Historical by Q</h4>
+	<table class="table table-striped table-bordered table-hover">
+		<thead>
+			<th>Channel</th>
+			<th ng-repeat="key in hbyq_keys" class="rev">{{key}}</th>
+		</thead>
+		<tbody>
+			<tr ng-repeat="item in hbyq_data">
+				<td>{{item[0]}}</td>
+				<td ng-repeat="cell in item.slice(1)" class="rev">{{cell | myCurrency }}</td>
+			</tr>
+		</tbody>		
+	</table>
+	
+	<h4>Client Count</h4>
+		<table class="table table-striped table-bordered table-hover">
+		<thead>
+			<th colspan="2">Channel</th>
+			<th ng-repeat="key in count_keys" class="rev">{{key}}</th>
+		</thead>
+		<tr ng-repeat="item in count_data">
+			<td ng-show="channel($index)" rowspan="{{spanamt($index)}}">{{item[0]}}</td><td>{{item[1]}}</td>
+				<td ng-repeat="cell in item.slice(2)" class="rev"> {{ cell | number }}</td>
+		</tr>
+	</table>
 </div>
-
-
-

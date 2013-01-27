@@ -1,5 +1,8 @@
 ﻿<h2>{{btn_text}} Campaign </h2>
+<div class="row-fluid">
 <form name="detailForm" class="form-horizontal">
+<div class="span6">
+		
     <div class="control-group" ng-class="{error: detailForm.campaign.$invalid}">
         <label class="control-label" for="campaign">Campaign</label>
         <div class="controls">
@@ -14,9 +17,10 @@
             	<option></option>
     			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
   			</select>
+       <br> <br>
         <button  class="btn" ng-click="get_from_rep()">Get from Rep</button>
-        <br> <br>
-        <button  class="btn" ng-click="add_rep()">Add additional rep</button>
+
+         <!--<button  class="btn" ng-click="add_rep()">Add additional rep</button>-->
         </div> 
     </div>
     <div class="control-group" ng-class="{error: detailForm.type.$invalid}">
@@ -73,6 +77,8 @@
             </select>
         </div>
     </div>
+</div>
+<div class="span6">
     <div class="control-group" ng-class="{error: detailForm.cpm_price.$invalid}">
         <label class="control-label" for="cpm_price">CPM price</label>
         <div class="controls">
@@ -109,11 +115,16 @@
             <input type="text" ng-model="item.revised_deal" id="revised_deal" placeholder="">
         </div>
     </div>
-    <div class="form-actions">
+    
+</div>
+
+<div class="span12">
+<div class="form-actions">
         <button ng-click="save()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary">
             {{btn_text}}
         </button>
         <button ng-click="save_and_book()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary"> {{btn_text}} and Book Revenue</button>        
         <button ng-click="cancel()" class="btn">Cancel</button>
     </div>
+</div></div>
 </form>

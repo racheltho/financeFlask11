@@ -46,7 +46,7 @@ def get_historicaldata():
 def get_count():
     data = get_sql('SELECT * FROM HistoricalCount')
     res = pivot_1(data)
-    return json_dict(res)
+    return json_obj(res)
 
 @app.route('/api/historicalcpm')
 def get_historicalcpm():
@@ -57,6 +57,12 @@ def get_historicalcpm():
 @app.route('/api/historicalcpa')
 def get_historicalcpa():
     data = get_sql('SELECT * FROM HistoricalCPA')
+    res = pivot_1(data)
+    return json_obj(res)
+
+@app.route('/api/historicalbyq')
+def get_historicalbyq():
+    data = get_sql('SELECT * FROM HistoricalbyQ')
     res = pivot_1(data)
     return json_obj(res)
 
@@ -72,4 +78,4 @@ print("Ready to run app")
 # start the flask loop
 app.run()
 
-
+#print get_count()

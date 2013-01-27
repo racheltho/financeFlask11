@@ -81,7 +81,8 @@
 			var options = {
 					  title: attrs.chartTitle,
 					  titleTextStyle: {color: 'black', fontSize: '18'},
-					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'black', fontSize: '14'}}
+					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'black', fontSize: '14'}},
+					  colors: ['#178cb7','666666']
 			}
 			chart.draw(data, options);
 		});
