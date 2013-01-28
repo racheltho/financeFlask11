@@ -1,9 +1,11 @@
 ﻿"use strict";
 
+/*global ListCtrl, EditCtrl, CreateCtrl, HomeCtrl, RepListCtrl, EditRepCtrl, CreateRepCtrl, DashboardCtrl, HistDashboardCtrl, ApproveIOsCtrl, BookedRevCtrl */
+
 var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
      config(function ($routeProvider) {
          $routeProvider.
-           when('/', { controller: HomeCtrl, templateUrl: 'home.html' }).
+           when('/', { controller: ListCtrl, templateUrl: 'list.html' }).
            when('/campaigns', { controller: ListCtrl, templateUrl: 'list.html' }).
            when('/edit/:campaignId', { controller: EditCtrl, templateUrl: 'detail.html' }).
            when('/new', { controller: CreateCtrl, templateUrl: 'detail.html' }).
@@ -14,7 +16,6 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/historical', { controller: HistDashboardCtrl, templateUrl: 'historical_dashboard.html' }).
            when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
-           when('/bookedRev/:campaignId', { controller: BookedRevCtrl, templateUrl: 'bookedRev.html' }).
            otherwise({ redirectTo: '/' });
     });     
 
@@ -33,7 +34,7 @@ var order_by = function(order, dir) {
 
 var HomeCtrl = function($scope, $location) {
 	
-}
+};
 
 var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
     var make_query = function() {
@@ -43,14 +44,14 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
             q.filters = [{name: "campaign", op: "ilike", val: "%" + $scope.query + "%"} ];
         }
         return angular.toJson(q);
-    }
+    };
 
     $scope.search = function () {
         var res = Campaign.get(
             { page: $scope.page, q: make_query(), results_per_page: 20 },
             function () {
-                $scope.no_more = res.page == res.total_pages;
-                if (res.page==1) { $scope.campaigns=[]; }
+                $scope.no_more = res.page === res.total_pages;
+                if (res.page===1) { $scope.campaigns=[]; }
                 $scope.campaigns = $scope.campaigns.concat(res.objects);
             }
         );
@@ -59,7 +60,7 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
     $scope.show_more = function () { return !$scope.no_more; };
     
     $scope.sort_by = function (ord) {
-        if ($scope.sort_order == ord) {$scope.sort_desc = !$scope.sort_desc;}
+        if ($scope.sort_order === ord) {$scope.sort_desc = !$scope.sort_desc;}
         else { $scope.sort_desc = false; }
         $scope.sort_order = ord;
         $scope.reset();
@@ -84,7 +85,7 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
    
 };
 
-function DetailsBaseCtrl($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel) {
+var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
@@ -94,31 +95,31 @@ function DetailsBaseCtrl($scope, $location, $routeParams, Campaign, Rep, Adverti
 	
 	$scope.get_from_rep = function(){
 		var id = $scope.item.rep_id;
-		if (!id) return;
+		if (!id) {return;}
     	Rep.get({ id: id }, function (item) {
         	if (item.product_id) {
 	        	Product.get( {id: item.product_id}, function(p) {
-		        	if(p) $scope.item.product_id = p.id;
+		        	if(p) {$scope.item.product_id = p.id;}
 	        	});
 	        }
 
         	if (item.channel_id) {
         		Channel.get( {id: item.channel_id}, function(c) {
-		        	if(c) $scope.item.channel_id = c.id;
+		        	if(c) {$scope.item.channel_id = c.id;}
 		        });
 	        }
         	$scope.item.type = item.type;
 	    });		
-	}
+	};
 	
 	$scope.cancel = function() {
 		var path = '/campaigns';
-    	if($routeParams.fromsfdc) path = '/approveIOs';
+    	if($routeParams.fromsfdc) {path = '/approveIOs';}
     	$location.path(path);
-	}
+	};
 	
 	
-	$scope.add_rep = function () { }
+	$scope.add_rep = function () { };
 		
 	get_sel_list(Rep, 'last_name', "select_reps");
 	get_sel_list(Advertiser, 'advertiser', "select_advertisers");
@@ -150,15 +151,15 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
 		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
 			$.each(['campaign', 'rep_id', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
 			function(i,o) {
-				if(data[o]) $scope.item[o] = data[o];
+				if(data[o]) {$scope.item[o] = data[o];}
 			});
 		});
-	};
+	}
 	
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
-var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, $injector) { 
+var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, $injector, Booked) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     var self = this;
@@ -168,8 +169,24 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
     Campaign.get({ id: $routeParams.campaignId }, function (item) {
         self.original = item;
         $scope.item = new Campaign(item);
+        $scope.calc_start = new Date($scope.item.start_date);
+        $scope.calc_end = new Date($scope.item.end_date);
+        $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
     });
 
+	var make_booked_query = function() {
+        var q = order_by("date", "asc");
+        q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId}];
+     	return angular.toJson(q);
+	};
+
+    Booked.get({ q: make_booked_query()}, function (items) {
+        $scope.bookeds = items.objects;
+        $scope.datearray = []; 
+        $scope.valuearray = [];
+        $.each($scope.bookeds, function(i,o) { $scope.datearray[i] = o.date; $scope.valuearray[i] = Math.round(o.bookedRev*100)/100;});
+    });
+  
     $scope.isClean = function () {
         return angular.equals(self.original, $scope.item);
     };
@@ -181,96 +198,8 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
         });
     };
     
-    $scope.save_and_book = function () {
-        Campaign.update({ id: $scope.item.id }, $scope.item, function() { $location.path('#/bookedRev/{{campaign.id}}'); });
-    };
 };
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
-
-
-
-var BookedRevCtrl = function ($scope, $routeParams, $location, Campaign, Booked, Actual) {
-	var b_completed = false;
-	var c_completed = false;
-	
-   Campaign.get({ id: $routeParams.campaignId }, function (c_item) {
-        self.original = c_item;
-        $scope.c_item = new Campaign(c_item);
-        c_completed = true;
-        construct_dates(c_completed, b_completed);
-    });	
-    
-    var make_query = function() {
-        var q = order_by("date", "asc");
-        q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId}];
-     	return angular.toJson(q);
-	};
-    
-    Booked.get({ q: make_query()}, function (items) {
-        $scope.bookeds = items.objects;
-        $scope.datearray = []; 
-        $scope.valuearray = [];
-        $.each($scope.bookeds, function(i,o) { $scope.datearray[i] = o.date; $scope.valuearray[i] = o.bookedRev;});
-        console.log($scope.bookeds);
-        b_completed = true;
-        construct_dates(c_completed, b_completed);
-    });
-
-	var construct_date_array = function(start_str, end_str){
-		start_YM = string_to_YM(start_str);
-		
-	}
-
-
-	var construct_dates = function(c, b){
-		
-	var string_to_date = function(str){
-		return new Date(str);
-	}
-
-	var string_to_YM = function(str){
-		var myDate = new Date(str);
-		y = myDate.getFullYear();
-		m = myDate.getMonth();
-		return [y, m];
-	}
-
-	var YM_to_date = function(ym_array){
-		return new Date(ym_array[0], ym_array[1]);
-	}
-
-   		if(c && b){
-   			var start; var end;
-   			if($.inArray($scope.c_item.start_date, $scope.datearray) >= 0){ start = $scope.datearray[0]; }
-   			else{ start = $scope.c_item.start_date; }
-   			if($.inArray($scope.c_item.end_date, $scope.datearray) >= 0){ end = $scope.datearray[$scope.datearray.length-1]; }
-   			else{ end = $scope.c_item.end_date; }
-   			$scope.myStart = new Date(start);
-   			$scope.myEnd = new Date(end);
-   			$scope.days_to_run = ($scope.myEnd - $scope.myStart)/1000/60/60/24;
-   			
-   			debugger;
-   		}
-	}
-   
-
-   //if(b_completed && c_completed){ console.log('Good Job Rachel');}
-   
-   /*
-   $scope.c_item = Campaign.get({id: $routeParams.campaignId });
-
-   
-	
-    	
-    Booked.get({q: make_query()}, function(items){
-    	$scope.bookeds = items;
-    	console.log($scope.bookeds);	
-    });
-	*/
-   
-       
-};
-
 
 var DashboardCtrl = function ($scope, $http) {
  	$http.get('/api/bookeddata').success(function(data) {
@@ -305,13 +234,13 @@ var HistDashboardCtrl = function ($scope, $http) {
 
 	// return true if item at this index is the same as the last one 	
  	$scope.channel = function(index) {
- 		if(index == 0 || !$scope.count_data[index]) {return true;}
- 		else if($scope.count_data[index-1][0] == $scope.count_data[index][0]) {return false;}
- 		else {return true;}
+ 		if(index === 0 || !$scope.count_data[index]) {return true;}
+ 		if($scope.count_data[index-1][0] === $scope.count_data[index][0]) {return false;}
+ 		return true;
  	};
  	$scope.spanamt = function(index) {
  		return $scope.channel(index+1) ? 1 : 2;
- 	}
+ 	};
 
 	$scope.title = 'Revenue';
 	$scope.chartData = [$scope.x, $scope.y]; 
@@ -322,7 +251,7 @@ var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, 
 	var make_query = function() {
         	var q = order_by("start_date", "asc");
             q.filters = [{name: "approved", op: "eq", val: false}];
-            if($scope.query) q.filters.push({name: "ioname", op: "ilike", val: "%" + $scope.query + "%"});
+            if($scope.query) {q.filters.push({name: "ioname", op: "ilike", val: "%" + $scope.query + "%"});}
         	return angular.toJson(q);
 	};
     	
@@ -330,8 +259,8 @@ var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, 
         var res = Sfdccampaign.get(
             { page: $scope.page, q: make_query(), results_per_page: 20 },
             function () {
-                $scope.no_more = res.page == res.total_pages;
-                if (res.page==1) { $scope.sfdc_camps=[]; }
+                $scope.no_more = res.page === res.total_pages;
+                if (res.page===1) { $scope.sfdc_camps=[]; }
                 $scope.sfdc_camps = $scope.sfdc_camps.concat(res.objects);
             }
         );
@@ -366,14 +295,14 @@ var RepListCtrl = function ($scope, $location, Rep) {
             q.filters = [{name: "last_name", op: "ilike", val: "%" + $scope.query + "%"} ];
         }
         return angular.toJson(q);
-    }
+    };
 
     $scope.search = function () {
         var res = Rep.get(
             { page: $scope.page, q: make_query() },
             function () {
-                $scope.no_more = res.page == res.total_pages;
-                if (res.page==1) { $scope.reps=[]; }
+                $scope.no_more = res.page === res.total_pages;
+                if (res.page===1) { $scope.reps=[]; }
                 $scope.reps = $scope.reps.concat(res.objects);
             }
         );
@@ -382,7 +311,7 @@ var RepListCtrl = function ($scope, $location, Rep) {
     $scope.show_more = function () { return !$scope.no_more; };
     
     $scope.sort_by = function (ord) {
-        if ($scope.sort_order == ord) {$scope.sort_desc = !$scope.sort_desc;}
+        if ($scope.sort_order === ord) {$scope.sort_desc = !$scope.sort_desc;}
         else { $scope.sort_desc = false; }
         $scope.sort_order = ord;
         $scope.reset();
@@ -406,7 +335,7 @@ var RepListCtrl = function ($scope, $location, Rep) {
    
 };
 
-function RepDetailsBaseCtrl($scope, $location, Rep, Product, Channel) {
+var RepDetailsBaseCtrl = function($scope, $location, Rep, Product, Channel) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
@@ -414,7 +343,7 @@ function RepDetailsBaseCtrl($scope, $location, Rep, Product, Channel) {
 	 	});
 	};
 	
-	$scope.add_rep = function () { }
+	$scope.add_rep = function () { };
 	
 	get_sel_list(Rep, 'last_name', "select_reps");
 	//get_sel_list(Advertiser, 'advertiser', "select_advertisers");

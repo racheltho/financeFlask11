@@ -69,4 +69,6 @@ color: #178cb7;
 	background-color: #178cb7;	
 }
 
-
+.well {
+	padding: 10px;
+}

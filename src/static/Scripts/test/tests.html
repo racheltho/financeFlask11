@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html ng-app="testApp">
+<head>
+  <meta charset="utf-8">
+  <title>Jeremy and Rachel's sophisticated testing framework</title>
+	<link rel="stylesheet" type="text/css" href="/static/Content/themes/base/jquery-ui.css"></link>
+  <link rel="stylesheet" href="qunit-1.11.0.css">
+		<link rel="stylesheet" type="text/css" href="/static/Content/themes/select2.css"></link>
+		<link rel="stylesheet" type="text/css" href="Scripts/angular-ui.css"></link>
+</head>
+<body>
+	<div ng-controller="testCtrl">
+		{{show_me}}
+	</div>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+		<script src="../underscore.js"></script>
+		<script src="../jquery-1.7.1.js"></script>
+		<script src="../jquery-ui-1.8.20.js"></script>
+		<script src="../bootstrap.js"></script>
+		<script src="../angular.js"></script>
+		<script src="../angular-resource.js"></script>
+		<script src="../angular-ui.js"></script>
+		<script src="../select2.js"></script>
+		<script src="../app.js"></script>
+		<script src="../directives.js"></script>
+		<script src="../filters.js"></script>
+		<script src="../jsapi.js"></script>
+		<script src="../calc.js"></script>
+  <script src="qunit-1.11.0.js"></script>
+  <script src="tests.js"></script>
+  <script type="application/javascript">
+  	var testApp = angular.module("testApp", ['ui']);
+  	var testCtrl = function($scope) {
+  		$scope.show_me = "hey!";
+  	}
+  </script>
+</body>
+</html>

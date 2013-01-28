@@ -1,22 +1,7 @@
-﻿CampaignApp.directive('jqDatepicker', function ($parse) {
-    return function(scope, element, attrs) {
-        var ngModel = $parse(attrs.ngModel);
-        $(function() {
-            element.datepicker({
-                showOn: "both",
-                changeYear: true,
-                changeMonth: true,
-                dateFormat: 'yy-mm-dd',
-                maxDate: '+10y',
-                yearRange: '2000:2020',
-                onSelect: function(dateText) {
-                    scope.$apply(function(s) { ngModel.assign(s, dateText); });
-                }
-            });
-        });
-    };
+﻿"use strict";
+/*global CampaignApp, google */
 
-}).directive('icon', function () {
+CampaignApp.directive('icon', function () {
     return {
         restrict: 'E', replace: true, scope:true,
         template: '<i class="icon-{{val}}"></i>',
@@ -39,7 +24,7 @@
             $scope.do_sort = function() { $scope.sort_by($scope.sort); };
 
             $scope.do_show = function(asc) {
-                return (asc != $scope.sort_desc) && ($scope.sort_order == $scope.sort);
+                return (asc !== $scope.sort_desc) && ($scope.sort_order === $scope.sort);
             };
         }
     };
@@ -76,17 +61,17 @@
 		
 		var chart = new google.visualization.ColumnChart(element[0]);
 		scope.$watch(attrs.columnChart, function(value) {
-			if (!value) return;
+			if (!value) {return;}
 			var data = google.visualization.arrayToDataTable(value);
 			var options = {
 					  title: attrs.chartTitle,
 					  titleTextStyle: {color: 'black', fontSize: '18'},
 					  hAxis: {title: attrs.chartHaxisTitle, titleTextStyle: {color: 'black', fontSize: '14'}},
 					  colors: ['#178cb7','666666']
-			}
+			};
 			chart.draw(data, options);
 		});
-	}
+	};
 })
 .directive('chart', function() {
     return {
@@ -98,4 +83,3 @@
         }
     };
 });
-;
