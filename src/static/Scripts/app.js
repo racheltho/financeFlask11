@@ -118,7 +118,21 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
     	$location.path(path);
 	};
 	
+	$scope.calculate = function() {
+		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
+	};
 	
+	$scope.update_campaign_calcs = function() {
+		$scope.calc_start = parseDate($scope.item.start_date);
+        $scope.calc_end = parseDate($scope.item.end_date);
+        $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
+        $scope.item.bookeds = $scope.item.bookeds || [];
+	    $.map($scope.item.bookeds, function(val, i) {
+	    	val.date = parseDate(val.date);
+	    });
+	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
+	};
+
 	$scope.add_rep = function () { };
 		
 	get_sel_list(Rep, 'last_name', "select_reps");
@@ -131,10 +145,6 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Add';
-
-	$scope.save_and_book = function () {
-        Campaign.save($scope.item, function() { $location.path('#/bookedRev/{{campaign.id}}'); });
-    };
 
     $scope.save = function () {
     	var path = '/campaigns';
@@ -153,9 +163,9 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
 			function(i,o) {
 				if(data[o]) {$scope.item[o] = data[o];}
 			});
+	        $scope.update_campaign_calcs();
 		});
 	}
-	
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
@@ -166,27 +176,11 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
     $scope.btn_text = 'Update';
     $scope.sfdcid = $routeParams.fromsfdc;
 
-	var make_booked_query = function() {
-        var q = order_by("date", "asc");
-        q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId}];
-     	return angular.toJson(q);
-	};
-
     Campaign.get({ id: $routeParams.campaignId }, function (item) {
         self.original = item;
         $scope.item = new Campaign(item);
-        $scope.calc_start = parseDate($scope.item.start_date);
-        $scope.calc_end = parseDate($scope.item.end_date);
-        $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
-	    $.map($scope.item.bookeds, function(val, i) {
-	    	val.date = parseDate(val.date);
-	    });
-	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
+        $scope.update_campaign_calcs();
     } );
-
-	$scope.calculate = function() {
-		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
-	};
 
     $scope.isClean = function () {
         return angular.equals(self.original, $scope.item);
