@@ -178,19 +178,14 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
         $scope.calc_start = parseDate($scope.item.start_date);
         $scope.calc_end = parseDate($scope.item.end_date);
         $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
-//	    Booked.get({ q: make_booked_query()}, function (items) {
-//	    $scope.bookeds = items.objects;
 	    $.map($scope.item.bookeds, function(val, i) {
 	    	val.date = parseDate(val.date);
 	    });
-	    $scope.table_bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
-	    //}, function(){
-	    // XXX Make this work! (actually, check it doesn't work already...) 
-//    	$scope.table_bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, []); 
-    	} );
+	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
+    } );
 
 	$scope.calculate = function() {
-		$scope.table_bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
+		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
 	};
 
     $scope.isClean = function () {
