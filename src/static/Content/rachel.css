@@ -72,3 +72,11 @@ color: #178cb7;
 .well {
 	padding: 10px;
 }
+
+.qc-blue-line {
+	width: 100%; 
+	height: 3px; 
+	background: #178cb7; 
+	overflow: hidden;
+	margin-bottom: 20px;
+}

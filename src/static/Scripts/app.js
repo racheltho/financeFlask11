@@ -166,27 +166,33 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
     $scope.btn_text = 'Update';
     $scope.sfdcid = $routeParams.fromsfdc;
 
-    Campaign.get({ id: $routeParams.campaignId }, function (item) {
-        self.original = item;
-        $scope.item = new Campaign(item);
-        $scope.calc_start = new Date($scope.item.start_date);
-        $scope.calc_end = new Date($scope.item.end_date);
-        $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
-    });
-
 	var make_booked_query = function() {
         var q = order_by("date", "asc");
         q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId}];
      	return angular.toJson(q);
 	};
 
-    Booked.get({ q: make_booked_query()}, function (items) {
-        $scope.bookeds = items.objects;
-        $scope.datearray = []; 
-        $scope.valuearray = [];
-        $.each($scope.bookeds, function(i,o) { $scope.datearray[i] = o.date; $scope.valuearray[i] = Math.round(o.bookedRev*100)/100;});
-    });
-  
+    Campaign.get({ id: $routeParams.campaignId }, function (item) {
+        self.original = item;
+        $scope.item = new Campaign(item);
+        $scope.calc_start = parseDate($scope.item.start_date);
+        $scope.calc_end = parseDate($scope.item.end_date);
+        $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
+//	    Booked.get({ q: make_booked_query()}, function (items) {
+//	    $scope.bookeds = items.objects;
+	    $.map($scope.item.bookeds, function(val, i) {
+	    	val.date = parseDate(val.date);
+	    });
+	    $scope.table_bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
+	    //}, function(){
+	    // XXX Make this work! (actually, check it doesn't work already...) 
+//    	$scope.table_bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, []); 
+    	} );
+
+	$scope.calculate = function() {
+		$scope.table_bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
+	};
+
     $scope.isClean = function () {
         return angular.equals(self.original, $scope.item);
     };

@@ -119,7 +119,7 @@
     </div>
     
 </div>
-<div class="span12"><div style="width: 100%; height: 3px; background: #178cb7; overflow: hidden;"></div></div>
+<div class="span12"><div class="qc-blue-line"></div></div>
 <div class="span2">
 	Start <br /> <input class="input-small" type="text" ui-date ng-model="calc_start" />
 	<br />
@@ -128,14 +128,14 @@
 <div class="span2">
 	End ({{ (calc_end - calc_start)/1000/60/60/24 | number:0 }} days)<br /> <input class="input-small" type="text" ui-date ng-model="calc_end" id="end" />
 	<br /> <br />
-	<button ng-click="calculate_booked()" class="btn btn-primary">Calculate</button>
+	<button ng-click="calculate()" class="btn btn-primary">Calculate</button>
 </div>
 
 <div class="span8">
-	<div class="span1" ng-repeat="(i, d) in datearray">
+	<div class="span1" ng-repeat="b in table_bookeds">
 		<table class="table table-striped table-condensed table-hover">
-		<thead class="customTable" > <th> {{d | date:'MM/yy'}}</th> </thead>
-		<tbody><tr><td> <input class="input-small" ng-model ="valuearray[i]"> </td></tr></tbody>
+		<thead class="customTable" > <th> {{b.date | date:'MM/yy'}}</th> </thead>
+		<tbody><tr><td> <input class="input-small" ng-model ="b.bookedRev"> </td></tr></tbody>
 		</table>
 	</div>
 </div>
@@ -143,7 +143,7 @@
 <div class="span12">
 	
 <div class="form-actions">
-        <button ng-click="save()" ng-disabled="isClean() || detailForm.$invalid" class="btn btn-primary">
+        <button ng-click="save()" ng-disabled="detailForm.$invalid" class="btn btn-primary">
             {{btn_text}}
         </button>
         <button ng-click="cancel()" class="btn">Cancel</button>

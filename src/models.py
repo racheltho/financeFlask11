@@ -72,7 +72,6 @@ association_table = db.Table('association', db.Model.metadata,
     db.Column('rep_id', db.Integer, db.ForeignKey('rep.id'))
 )'''
 
-
 class Rep(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     repID = db.Column(db.Unicode, unique=True)
