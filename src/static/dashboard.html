@@ -1,3 +1,39 @@
+<h1>Current Dashboard</h1>
+<form class="form-search">
+	<div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
+		<label class="control-label" for="channel">Channel</label>
+		<div class="controls">
+			<select ui-select2 ng-model="channel_id" ng-click="getChannel()"  id="channel" data-placeholder="-- Select One --">
+				<option></option>
+				<option ng-repeat="a in select_channels" value="{{a.id}}">{{a.channel}}</option>
+			</select>
+			<button ng-click="channel_id=''" ng-disabled="!channel_id" type="submit" class="btn">Reset</button>
+		</div>
+	</div>
+</form>
+
+<h4> {{ cpa }} </h4>
+<table class="table table-striped table-bordered table-hover">
+	<thead>
+		<th>Advertiser</th> <th ng-repeat="key in agency_keys" class="rev">{{key}}</th>
+	</thead>
+	<tr ng-repeat="item in agency_data">
+		<td>{{item[1]}}</td>
+		<td ng-repeat="cell in item.slice(2)" class="rev"> {{ cell | number:0 }}</td></tr>
+	
+	
+	<!-- For original version:
+	<thead>
+		<th>Advertiser</th><th>Campaign</th><th>Contracted Deal</th><th>Revised Deal</th>
+		<th ng-repeat="key in agency_keys" class="rev">{{key}}</th>
+	</thead>
+	<tr ng-repeat="item in agency_data">
+		<td ng-show="advertiser_name($index)" rowspan="{{spanamt($index)}}">{{item[1]}}</td><td> {{item[2] }}</td>
+		<td ng-repeat="cell in item.slice(3)" class="rev"> {{ cell | number }}</td>
+	</tr> --->
+</table>
+
+
 <h1>Revenue Dashboard</h1>
 
 

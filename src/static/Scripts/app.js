@@ -1,6 +1,6 @@
 ﻿"use strict";
 
-/*global ListCtrl, EditCtrl, CreateCtrl, HomeCtrl, RepListCtrl, EditRepCtrl, CreateRepCtrl, DashboardCtrl, HistDashboardCtrl, ApproveIOsCtrl, BookedRevCtrl */
+/*global ListCtrl, EditCtrl, CreateCtrl, HomeCtrl, RepListCtrl, EditRepCtrl, CreateRepCtrl, DashboardCtrl, HistDashboardCtrl, ApproveIOsCtrl, BookedRevCtrl, AgencyDashboardCtrl */
 
 var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
      config(function ($routeProvider) {
@@ -13,13 +13,14 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/editrep/:repId', { controller: EditRepCtrl, templateUrl: 'repdetail.html' }).
            when('/newrep', { controller: CreateRepCtrl, templateUrl: 'repdetail.html' }).
            when('/dashboard', { controller: DashboardCtrl, templateUrl: 'dashboard.html' }).
+           when('/agencydash', {controller: AgencyDashboardCtrl, templateUrl: 'agency_dashboard.html'}).
            when('/historical', { controller: HistDashboardCtrl, templateUrl: 'historical_dashboard.html' }).
            when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
            otherwise({ redirectTo: '/' });
     });     
 
-$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign'], 
+$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent'], 
 	function(i, s) {
 		CampaignApp.factory(s, function ($resource) {
 		    return $resource('/api/' + s.toLowerCase() + '/:id', 
@@ -85,7 +86,7 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
    
 };
 
-var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel) {
+var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, Parent) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
@@ -241,6 +242,68 @@ var HistDashboardCtrl = function ($scope, $http) {
 	$scope.chartData = [$scope.x, $scope.y]; 
  	//$scope.data = $scope.count2011; //[[[0, 1], [1, 5], [2, 2]]];
 };
+
+
+var AgencyDashboardCtrl = function($scope, $http, Parent, Advertiser) {
+
+	var get_sel_list = function(model, field, ngmodel_fld) {
+		var q = order_by(field, "asc");
+		model.get({q: angular.toJson(q)}, function(items) {
+			$scope[ngmodel_fld] = items.objects;
+	 	});
+	};
+	
+	get_sel_list(Parent, 'parent', "select_parents");
+	//get_sel_list(Advertiser, 'advertiser', "select_advertisers");
+	
+	var make_ad_query = function() {
+        var q = order_by("advertiser", "asc");
+        if ($scope.parent_id) { q.filters = [{ name: "parent_agency_id", op: "eq", val: $scope.parent_id } ];}
+        return angular.toJson(q);
+    };
+	
+	$scope.getAdvertisers = function(){	
+		Advertiser.get({q: make_ad_query()}, function(items){
+			$scope.advertisers = items;
+		});
+		$http.get('/api/agencytable/'+ $scope.parent_id ).success(function(data) {
+ 			$scope.agency_chart = data.res;
+ 			$scope.agency_keys = $scope.agency_chart[0].slice(1);
+ 			var myslice = $scope.agency_chart.slice(1);
+ 			$scope.agency_data = []; 
+ 			$.each(myslice, function(i,o){ $scope.agency_data[i] = (o[0].split('|').concat(o.slice(1))).slice(1);
+											$scope.agency_data[i][2] = Math.round($scope.agency_data[i][2]);
+ 											});
+ 		});
+	};
+	
+	$scope.advertiser_name = function(index) {
+ 		if(index === 0 || !$scope.agency_data[index]) {return true;}
+ 		if($scope.agency_data[index-1][1] === $scope.agency_data[index][1]) {return false;}
+ 		return true;
+ 	};
+ 	
+	
+	
+	/* For my original 11 column array:
+	 * $.each(myslice, function(i,o){ $scope.agency_data[i] = (o[0].split('|').concat(o.slice(1))).slice(1);
+ 											$scope.agency_data[i][3] = parseInt($scope.agency_data[i][3],10);
+ 											$scope.agency_data[i][4] = parseInt($scope.agency_data[i][4],10);
+ 											$.each([5,6,7,8,9], function(i2,o2){ $scope.agency_data[i][o2] = Math.round($scope.agency_data[i][o2]); });
+ 											})
+ 											
+ 		$scope.spanamt = function(index) {
+ 		var counter = 1;
+ 		while(index < $scope.agency_data.length - 1 && $scope.agency_data[index][1] === $scope.agency_data[index+1][1]){
+ 			index += 1;
+ 			counter += 1;
+ 		}
+ 		return counter;
+ 		};									
+	 
+	 */
+};
+
 
 var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, Sfdccampaign) {
 	var make_query = function() {

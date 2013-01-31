@@ -123,10 +123,10 @@
 <div class="span2">
 	Start <br /> <input class="input-small" type="text" ui-date ng-model="calc_start" />
 	<br />
-	Deal <br /> <input class="input-small" type="text" ng-model="calc_deal">
+	Total Budget<br /> <input class="input-small" type="text" ng-model="calc_deal">
 </div>
 <div class="span2">
-	End ({{ (calc_end - calc_start)/1000/60/60/24 | number:0 }} days)<br /> <input class="input-small" type="text" ui-date ng-model="calc_end" id="end" />
+	End ({{ 1 + (calc_end - calc_start)/1000/60/60/24 | number:0 }} days)<br /> <input class="input-small" type="text" ui-date ng-model="calc_end" id="end" />
 	<br /> <br />
 	<button ng-click="calculate()" class="btn btn-primary">Calculate</button>
 </div>

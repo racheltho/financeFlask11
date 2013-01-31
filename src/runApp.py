@@ -13,9 +13,9 @@ manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
 # Create API endpoints, which will be available at /api/<tablename> by
 # default. Allowed HTTP methods can be specified as well.
 manager.create_api(Industry, methods=['GET', 'POST', 'DELETE', 'PUT'])
-#manager.create_api(ParentAgency, methods=['GET','POST', 'DELETE', 'PUT'])
+manager.create_api(Parent, methods=['GET','POST', 'DELETE', 'PUT'], results_per_page=20000, max_results_per_page=20000)
 manager.create_api(Campaign, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20, max_results_per_page=10000)
-manager.create_api(Advertiser, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
+manager.create_api(Advertiser, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20000, max_results_per_page=20000)
 manager.create_api(Rep, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=200)
 manager.create_api(Product, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
 manager.create_api(Booked, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
@@ -24,7 +24,11 @@ manager.create_api(Sfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_p
 manager.create_api(Channel, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Sfdccampaign, methods=['GET'], results_per_page=20)
 
-
+@app.route('/api/agencytable/<int:agencyid>')
+def get_agency_table(agencyid):
+    data = get_sql("SELECT * FROM Agencytable WHERE A LIKE " + str(agencyid) + "|| '|%'")
+    res = pivot_1(data)
+    return json_obj(res)    
 
 @app.route('/api/campaign_from_sfdc/<int:sfdcid>')
 def get_campaign_from_sfdc(sfdcid):
