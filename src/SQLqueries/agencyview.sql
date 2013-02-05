@@ -1,4 +1,8 @@
-﻿DROP VIEW Agencytable
+﻿SELECT 
+
+
+
+DROP VIEW Agencytable
 
 CREATE OR REPLACE VIEW Agencytable AS
 SELECT CAST(P.id || '|' || P.parent || '|' || A.advertiser AS Varchar) AS A, CAST (date_part('year', B.date) || ' ' || 'Q' || date_part('quarter', B.date) AS Varchar) AS Q,

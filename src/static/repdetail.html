@@ -30,12 +30,19 @@
         </div>
     </div>
     
-     <div class="control-group" ng-class="{error: detailForm.start.$invalid}">
+     <div class="control-group" ng-class="{error: detailForm.datehire.$invalid}">
         <label class="control-label" for="due">Date of Hire</label>
         <div class="controls">
-            <input type="text" jq-datepicker ng-model="item.date_of_hire" id="date_of_hire" placeholder="date">
+            <input type="text"  ui-date ui-date-format="yy-mm-dd" ng-model="item.date_of_hire" id="date_of_hire" placeholder="date">
         </div>
     </div>
+    <div class="control-group" ng-class="{error: detailForm.terminationdate.$invalid}">
+        <label class="control-label" for="due">Termination Date</label>
+        <div class="controls">
+            <input type="text"  ui-date ui-date-format="yy-mm-dd" ng-model="item.termination_date" id="termination_date" placeholder="date">
+        </div>
+    </div>
+  
  	<div class="control-group" ng-class="{error: detailForm.dept.$invalid}">
         <label class="control-label" for="dept">Department</label>
         <div class="controls">
@@ -65,6 +72,23 @@
     			<option ng-repeat="c in select_products" value="{{c.id}}">{{c.product}}</option>
   			</select>
         </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.dept.$invalid}">
+        <label class="control-label" for="type">Type</label>
+        <div class="controls">
+            <select ui-select2 ng-model="item.type" id="type" data-placeholder="-- Select One --">
+        		<option></option>
+        		<option value="Brand LAL">Brand LAL</option>
+            	<option value="Perf LAL">Perf LAL</option>
+            </select>            
+        </div>
+    </div>
+    
+     <div class="control-group" ng-class="{error: detailForm.channel.$invalid}">
+        <label class="control-label" for="seller">Seller</label>
+        <div class="controls">    
+            <input type="checkbox" id="inlineCheckbox1" ng-model="item.seller">
+      </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.type.$invalid}">
         <label class="control-label" for="managerID">Manager</label>

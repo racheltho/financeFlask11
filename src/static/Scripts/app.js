@@ -41,7 +41,6 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
     var make_query = function() {
         var q = order_by($scope.sort_order, $scope.sort_desc ? "desc": "asc");
         if ($scope.query) {
-            //q.filters = [{name: "upper(campaign)", op: "like", val: "%" + $scope.query.toUpperCase() + "%"} ];
             q.filters = [{name: "campaign", op: "ilike", val: "%" + $scope.query + "%"} ];
         }
         return angular.toJson(q);
@@ -94,23 +93,45 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	 	});
 	};
 	
-	$scope.get_from_rep = function(){
-		var id = $scope.item.rep_id;
-		if (!id) {return;}
-    	Rep.get({ id: id }, function (item) {
-        	if (item.product_id) {
-	        	Product.get( {id: item.product_id}, function(p) {
-		        	if(p) {$scope.item.product_id = p.id;}
-	        	});
-	        }
+	var q = order_by("last_name", "asc");
+	q.filters = [{name: "seller", op: "eq", val: true}/*, {name: "termination_date", op:"is_null" }*/ ];
+	Rep.get({q: angular.toJson(q)}, function(items) {
+			$scope.select_reps = items.objects;
+	});
 
-        	if (item.channel_id) {
-        		Channel.get( {id: item.channel_id}, function(c) {
-		        	if(c) {$scope.item.channel_id = c.id;}
-		        });
-	        }
-        	$scope.item.type = item.type;
-	    });		
+	$scope.add_rep = function() {
+		if (!$scope.new_rep) {return;}
+		var reps = $scope.item.rep;
+		var new_rep = $.parseJSON($scope.new_rep);
+		if(_.find(reps, function(o) {return o.id === new_rep.id.toString();})) { return; }
+		$scope.item.rep.push(new_rep);
+		$scope.new_rep = "";
+	};
+
+	$scope.delete_rep = function(rep) {
+		if (!rep) {return;}
+		var reps = $scope.item.rep;
+		var idx = reps.indexOf(rep);
+		if (idx<0) {return;}
+		$scope.item.rep.splice(idx,1);
+		$('#rep_' + rep.id).fadeOut();
+	};
+		
+	$scope.get_from_rep = function(item){
+		console.log(item);
+		if (!item) {return;}
+    	if (item.product_id) {
+        	Product.get( {id: item.product_id}, function(p) {
+	        	if(p) {$scope.item.product_id = p.id;}
+        	});
+        }
+
+    	if (item.channel_id) {
+    		Channel.get( {id: item.channel_id}, function(c) {
+	        	if(c) {$scope.item.channel_id = c.id;}
+	        });
+        }
+    	$scope.item.type = item.type;
 	};
 	
 	$scope.cancel = function() {
@@ -134,10 +155,25 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
 	};
 
-	$scope.add_rep = function () { };
-		
-	get_sel_list(Rep, 'last_name', "select_reps");
-	get_sel_list(Advertiser, 'advertiser', "select_advertisers");
+	var formatAdv = function(object) {return object.advertiser;};
+	
+	$scope.select_advertisers = {
+	    formatSelection: formatAdv,
+	    formatResult: formatAdv,
+	    minimumInputLength: 2,
+	    ajax: {
+	      url: "/api/advertiser",
+	      data: function (term, page) {
+	        var q = order_by("advertiser", "asc");
+	        q.filters = [{name: "advertiser", op: "ilike", val: "%" + term + "%"} ];
+	        return {q:angular.toJson(q)};
+	      },
+	      results: function (data) {
+	        return {results: data.objects};
+	      }
+	    }
+	};
+	
 	get_sel_list(Product, 'product', "select_products");
 	get_sel_list(Channel, 'channel', "select_channels");
 }; 
@@ -153,7 +189,8 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
     		path = '/approveIOs'; 
     		Sfdc.update({ id: $scope.sfdcid}, {approved:true} );
     	}
-        Campaign.save($scope.item, function() { $location.path(path); });
+        $scope.item.advertiser_id = $scope.item.advertiser.id;
+	    Campaign.save($scope.item, function() { $location.path(path); });
     };
 
     $scope.sfdcid = $routeParams.fromsfdc;
@@ -188,6 +225,7 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
     };
 
     $scope.save = function () {
+    	$scope.item.advertiser_id = $scope.item.advertiser.id;
         Campaign.update({ id: $scope.item.id }, $scope.item, function() {
         	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
         	else {$location.path('/campaigns');} 

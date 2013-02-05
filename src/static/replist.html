@@ -15,8 +15,8 @@
         <th sorted="first_name">First Name</th>
         <th sorted="employeeID">Employee ID</th>
         <th sorted="date_of_hire">Date of Hire</th>
-<!--        <th sorted="rep.last_name">Rep</th>-->
-        <th sorted="department">Department</th>
+		<th sorted="type">Type</th>
+        <!-- <th sorted="department">Department</th>-->
         <th sorted="channel">Channel</th>
         <th sorted="channel">Product</th>
         <th sorted="manager">Manager</th>
@@ -29,8 +29,8 @@
             <td>{{rep.first_name}}</td>
             <td>{{rep.employeeID}}</td>
             <td>{{rep.date_of_hire | date}}</td>
-            <!-- <td>{{campaign.rep.last_name}}, {{ campaign.rep.first_name }}</td> -->
-            <td>{{rep.department}}</td>
+            <td>{{rep.type}}</td>
+            <!--<td>{{rep.department}}</td>-->
             <td>{{rep.channel.channel}}</td>
             <td>{{rep.product.product}}</td>
             <td>{{rep.manager.repID}}</td>

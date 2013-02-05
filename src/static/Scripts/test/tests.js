@@ -14,6 +14,12 @@ test("mths test", function() {
 	deepEqual(actMonths, exp, "Passed");
 });
 
+test("mths null test", function(){
+	deepEqual(mths(null, null), []);
+	deepEqual(mths(null, new Date('05-25-2012')), []);
+	deepEqual(mths(new Date('06-12-1983'), null),[]);
+});
+
 test("calc_booked_rev test", function() {
 	var campStDate = new Date('01-15-2012');
 	var campEndDate = new Date('04-15-2012');
@@ -172,6 +178,12 @@ test("parseDate test", function() {
 	var parsedDate = parseDate(strDate);
 	var exp = new Date('10-15-2011');
 	deepEqual(parsedDate, exp, "Passed");
+});
+
+test("parseDate handles Null", function(){
+	var dummy;
+	var res = parseDate(dummy);
+	ok(!res);
 });
 
 test("sameDates test", function() {

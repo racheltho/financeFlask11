@@ -49,6 +49,8 @@ SELECT channel, cast (date_part('year', B.date) || ' ' || 'Q' || date_part('quar
   GROUP BY channel, Q
   ORDER BY 1,2;
 
+SELECT * FROM HistoricalbyQ
+
 CREATE OR REPLACE VIEW CPA AS
 SELECT channel, sum("bookedRev"), cast(date_part('year', B.date) AS INT) AS year
   FROM booked B

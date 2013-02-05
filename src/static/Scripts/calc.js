@@ -1,6 +1,7 @@
 "use strict";
 
 var mths = function(start, end) {
+	if(!start || !end){ return [];}
 	var d = [];
 	var start1 = new Date(start);
 	start1.setDate(1);
@@ -100,6 +101,7 @@ var date_array = function(arr) {
 };
 
 var parseDate = function(input) {
+	if(!input){ return input; }
 	var parts = input.match(/(\d+)/g);
 	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
 	return new Date(parts[0], parts[1] - 1, parts[2]);

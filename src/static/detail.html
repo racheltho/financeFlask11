@@ -1,7 +1,7 @@
 ﻿<h2>{{btn_text}} Campaign </h2>
 <div class="row">
 <form name="detailForm" class="form-horizontal">
-<div class="span6">
+<div class="span7">
 		
     <div class="control-group" ng-class="{error: detailForm.campaign.$invalid}">
         <label class="control-label" for="campaign">Campaign</label>
@@ -13,22 +13,27 @@
         <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
         <label class="control-label" for="advertiser">Advertiser</label>
         <div class="controls">
-            <select ui-select2 ng-model="item.advertiser_id" id="advertiser" data-placeholder="-- Select One --">
-            	<option></option>
-    			<option ng-repeat="a in select_advertisers" value="{{a.id}}">{{a.advertiser}}</option>
-  			</select>
+			<input ui-select2="select_advertisers" ng-model="item.advertiser" data-placeholder="-- Select One --" />
         </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
-        <label class="control-label" for="rep">Representative</label>
+        <label class="control-label" for="rep">Representatives</label>
         <div class="controls">
-            <select ui-select2 ng-model="item.rep_id" id="rep" data-placeholder="-- Select One --">
+        <div ng-repeat="my_rep in item.rep">
+            <select ui-select2 ng-model="my_rep.id" style="width: 60%" data-placeholder="-- Select One --">
             	<option></option>
     			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
   			</select>
-       <br> <br>
-        <button  class="btn" ng-click="get_from_rep()">Get from Rep</button>
-
+        <button  class="btn-small" id="rep_{{my_rep.id}}" ng-click="delete_rep(my_rep)">Del</button>
+        <button  class="btn-small" ng-click="get_from_rep(my_rep)">Get</button>
+        </div>
+        <div>
+			<select ui-select2 ng-model="new_rep" id="new_rep" style="width: 60%" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="r in select_reps" value="{{r}}">{{r.last_name + ", " + r.first_name}}</option>
+  			</select>
+  		<button class="btn-small" ng-click="add_rep()">Add</button>
+  		</div> 
          <!--<button  class="btn" ng-click="add_rep()">Add additional rep</button>-->
         </div> 
     </div>
@@ -70,7 +75,7 @@
     </div>-->
     
 </div>
-<div class="span6">
+<div class="span5">
 	<div class="control-group" ng-class="{error: detailForm.cp.$invalid}">
         <label class="control-label" for="cp">CPA/CPM</label>
         <div class="controls">
@@ -84,37 +89,37 @@
     <div class="control-group" ng-class="{error: detailForm.cpm_price.$invalid}">
         <label class="control-label" for="cpm_price">CPM price</label>
         <div class="controls">
-            <input type="text" ng-model="item.cpm_price" id="cpm_price" placeholder="">
+            <input type="text" ng-model="item.cpm_price" id="cpm_price" placeholder="" />
         </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.start.$invalid}">
         <label class="control-label" for="start">Start Date</label>
         <div class="controls">
-            <input type="text" ui-date  ui-date-format="yy-mm-dd" ng-model="item.start_date" id="start" placeholder="Date">
+            <input type="text" ui-date  ui-date-format="yy-mm-dd" ng-model="item.start_date" id="start" placeholder="Date" />
         </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.end.$invalid}">
         <label class="control-label" for="end_date">End Date</label>
         <div class="controls">
-            <input type="text" ui-date ui-date-format="yy-mm-dd" ng-model="item.end_date" id="end_date" placeholder="Date">
+            <input type="text" ui-date ui-date-format="yy-mm-dd" ng-model="item.end_date" id="end_date" placeholder="Date" />
         </div>
     </div>
        <div class="control-group" ng-class="{error: detailForm.contracted_impr.$invalid}">
         <label class="control-label" for="contracted_impr">Contracted Impressions</label>
         <div class="controls">
-            <input type="text" ng-model="item.contracted_impr" id="contracted_impr" placeholder="">
+            <input type="text" ng-model="item.contracted_impr" id="contracted_impr" placeholder="" />
         </div>
     </div>
        <div class="control-group" ng-class="{error: detailForm.contracted_deal.$invalid}">
         <label class="control-label" for="contracted_deal">Contracted Deal</label>
         <div class="controls">
-            <input type="text" ng-model="item.contracted_deal" id="contracted_deal" placeholder="">
+            <input type="text" ng-model="item.contracted_deal" id="contracted_deal" placeholder="" />
         </div>
     </div>
        <div class="control-group" ng-class="{error: detailForm.revised_deal.$invalid}">
         <label class="control-label" for="revised_deal">Revised Deal</label>
         <div class="controls">
-            <input type="text" ng-model="item.revised_deal" id="revised_deal" placeholder="">
+            <input type="text" ng-model="item.revised_deal" id="revised_deal" placeholder="" />
         </div>
     </div>
     
@@ -123,7 +128,7 @@
 <div class="span2">
 	Start <br /> <input class="input-small" type="text" ui-date ng-model="calc_start" />
 	<br />
-	Total Budget<br /> <input class="input-small" type="text" ng-model="calc_deal">
+	Total Budget<br /> <input class="input-small" type="text" ng-model="calc_deal" />
 </div>
 <div class="span2">
 	End ({{ 1 + (calc_end - calc_start)/1000/60/60/24 | number:0 }} days)<br /> <input class="input-small" type="text" ui-date ng-model="calc_end" id="end" />
@@ -135,7 +140,7 @@
 	<div class="span1" ng-repeat="b in item.bookeds">
 		<table class="table table-striped table-condensed table-hover">
 		<thead class="customTable" > <th> {{b.date | date:'MM/yy'}}</th> </thead>
-		<tbody><tr><td> <input class="input-small" ng-model ="b.bookedRev"> </td></tr></tbody>
+		<tbody><tr><td> <input class="input-small" ng-model ="b.bookedRev" /> </td></tr></tbody>
 		</table>
 	</div>
 </div>
