@@ -70,9 +70,17 @@ class Advertiser(db.Model):
     industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'))
     industry = db.relationship('Industry')
 
+"""
+class Association(db.Model):
+    id = db.Column(db.Integer, primary_key=True)   
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
+    campaign = db.relationship('Campaign', backref=backref('associations', cascade='all,delete'))
+    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    rep = db.relationship('Rep')
+"""
 
 association_table = db.Table('association', db.Model.metadata,
-    db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
+    db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id', ondelete="CASCADE")),
     db.Column('rep_id', db.Integer, db.ForeignKey('rep.id'))
 )
 
@@ -388,7 +396,10 @@ def populateCampaignRevenue(wb):
             sfdc_oid = None
         else:
             sfdc_oid = int(sfdc_oid)
-        rep = get_or_create(db.session, Rep, repID = sh.cell(rownum,14).value)          
+        repid = sh.cell(rownum,14).value
+        if(repid == "VB"):
+            repid = "VV"
+        rep = get_or_create(db.session, Rep, repID = repid)          
         cp = sh.cell(rownum,15).value
         try:
             start_date = xldate_as_tuple(sh.cell(rownum,16).value,0)[0:3]
@@ -458,99 +469,84 @@ def populateCampaignRevenue(wb):
     print("PopulateRevenue Finished") 
     
     
-
-#        a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
-#                     industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = rep, cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
-#                     contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
-#        db.session.add(a)
-#        db.session.commit()
-
-
-def populateRevenue(wb): 
-    # Fill revenue tables
-    sh = wb.sheet_by_name('Actual')
-    for rownum in range(1,sh.nrows):
-        camp_str = sh.cell(rownum,0).value
-        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
-        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
-        channel = sh.cell(rownum,3).value
-#        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
-        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
-        py_start = date(*start)
-        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
-        py_end = date(*end)              
+def populateCampaignRevenue09(wb):         
+    sh = wb.sheet_by_name('Rev09')
+     
+    for rownum in range(4,264): #sh.nrows):
+        product = get_or_create(db.session, Product, product = sh.cell(rownum,0).value)
+        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,2).value)
+        agency = sh.cell(rownum,3).value
+        campaign = sh.cell(rownum,4).value
+        t = sh.cell(rownum,5).value
+        channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,6).value)
+        cp = sh.cell(rownum,7).value
+        industry = sh.cell(rownum,8).value
+        if(industry == '(blank)'):
+            industry = None
+        repid = sh.cell(rownum,9).value
+        if(repid == "VB"):
+            repid = "VV"
+        rep = get_or_create(db.session, Rep, repID = repid)
         try:
-            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
-            for colnum in range(7,sh.ncols):
-                rev = sh.cell(rownum,colnum).value
-                if isinstance(rev,float) and rev != 0.0: 
-                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                    pyDate = date(*mydate)
-                    a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
-                    db.session.add(a)
+            start_date = xldate_as_tuple(sh.cell(rownum,10).value,0)[0:3]
+            py_start = date(*start_date)
+            end = xldate_as_tuple(sh.cell(rownum,11).value,0)[0:3]
+            py_end = date(*end)
         except:
-            try:
-                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, start_date = py_start, end_date = py_end).first()
-                for colnum in range(7,sh.ncols):                
-                    rev = sh.cell(rownum,colnum).value
-                    if isinstance(rev,float) and rev != 0.0:
-                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                        pyDate = date(*mydate)
-                        a = Actual(campaign=campaign, date=pyDate, actualRev=rev)
-                        db.session.add(a)            
-            except:
-                pass
-    db.session.commit()
-    
-    sh = wb.sheet_by_name('Booked')
-    for rownum in range(1,sh.nrows):
-        camp_str = sh.cell(rownum,0).value
-        rep = db.session.query(Rep).filter_by(repID = sh.cell(rownum,1).value).first()
-        product =  db.session.query(Product).filter_by(product = sh.cell(rownum,2).value).first()
-        channel = sh.cell(rownum,3).value
-#        advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,4).value).first()
-        start = xldate_as_tuple(sh.cell(rownum,5).value,0)[0:3]
-        py_start = date(*start)
-        end = xldate_as_tuple(sh.cell(rownum,6).value,0)[0:3]
-        py_end = date(*end)              
-        try:
-            campaign = db.session.query(Campaign).filter_by(campaign = camp_str).first()
-            for colnum in range(7,sh.ncols):
-                rev = sh.cell(rownum,colnum).value
-                if isinstance(rev,float) and rev != 0.0: 
-                    mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                    pyDate = date(*mydate)
-                    a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
-                    db.session.add(a)
-        except:
-            try:
-                campaign = db.session.query(Campaign).filter_by(campaign = camp_str, repId = rep, channel=channel, product = product, start_date = py_start, end_date = py_end).first()
-                for colnum in range(7,sh.ncols):                
-                    rev = sh.cell(rownum,colnum).value
-                    if isinstance(rev,float) and rev != 0.0:
-                        mydate = xldate_as_tuple(sh.cell(0,colnum).value,0)[0:3]
-                        pyDate = date(*mydate)
-                        a = Booked(campaign=campaign, date=pyDate, bookedRev=rev)
-                        db.session.add(a)            
-            except:
-                pass
-    db.session.commit()
-    print("PopulateRevenue Finished")
+            pass                            
+        contracted_deal = sh.cell(rownum,12).value
+        if not isinstance(contracted_deal, float):  
+            contracted_deal = None    
+        revised_deal = sh.cell(rownum,14).value
+        if not isinstance(revised_deal, float):  
+            revised_deal = None
+        # For multiple reps:
+        instance = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+        if instance:
+            print("Alert, Alert, Alert, Alert")
+            print(campaign)
+            print(rep.id)
+            print(instance.rep[0].id)
+            instance.rep.append(rep)
+            db.session.commit()
+            c = instance
+        else: 
+            c = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, industry = industry, 
+                         agency = agency, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, contracted_deal = contracted_deal, revised_deal = revised_deal)    
+            #print(campaign)
+            db.session.add(c)
+            db.session.commit()
+
+        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+            
+        for colnum in range(20,44):
+            rev = sh.cell(rownum,colnum).value
+            if isinstance(rev,float) and rev != 0.0: 
+                mydate = xldate_as_tuple(sh.cell(3,colnum).value,0)[0:3]
+                pyDate = date(*mydate)
+                a = Actual(campaign=c, date=pyDate, actualRev=rev)
+                db.session.add(a)
+                db.session.commit()
+        
+    print("PopulateRevenue Finished") 
 
 
 def cleanDB():
+#    db.engine.execute(association_table.delete())
     s = db.session
-    s.query(Sfdc).delete()    
+#    s.query(Sfdc).delete()    
     s.query(Booked).delete()
     s.query(Actual).delete()
     s.query(Campaign).delete()    
+    s.commit()
+"""
     s.query(Rep).delete()
     s.query(Advertiser).delete()
     s.query(Parent).delete()
     s.query(Industry).delete()    
     s.query(Channel).delete()
     s.query(Product).delete()
-    s.commit()
+"""
 
 def json_dict(o):
     return json_obj([dict(d) for d in o])
@@ -579,7 +575,7 @@ print(json.dumps(list(res), indent=2))
 '''
 
 db.create_all()   
-wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData.xls')
+wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData02062013.xls')
 #populateChannel(wb)
 #populateParent(wb)
 #populateAdvertiser(wb)
@@ -592,20 +588,16 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #    print(colnum)
 #    print(pyDate)
 
-populateCampaignRevenue(wb)
-#populateRevenue(wb)
+#populateCampaignRevenue(wb)
+#populateCampaignRevenue09(wb)
 
 #cleanDB()
-#populateDB()
 #readSFDCexcel()
 
 
 #import pdb; pdb.set_trace()
 
-#field = getattr(Campaign, "rep")
-#field = getattr(field, "last_name")
-#direction = getattr(field, "asc")
-#query = query.order_by(direction())
+
 
 """
 s = db.session

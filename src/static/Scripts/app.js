@@ -119,6 +119,7 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 		
 	$scope.get_from_rep = function(item){
 		console.log(item);
+		debugger;
 		if (!item) {return;}
     	if (item.product_id) {
         	Product.get( {id: item.product_id}, function(p) {

@@ -1,4 +1,6 @@
-﻿CREATE OR REPLACE VIEW Agencytable AS
+﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
+
+CREATE OR REPLACE VIEW Agencytable AS
 SELECT CAST(P.id || '|' || P.parent || '|' || A.advertiser AS Varchar) AS A, CAST (date_part('year', B.date) || ' ' || 'Q' || date_part('quarter', B.date) AS Varchar) AS Q,
 	SUM(B."bookedRev")
   FROM Parent P
@@ -9,7 +11,7 @@ SELECT CAST(P.id || '|' || P.parent || '|' || A.advertiser AS Varchar) AS A, CAS
   JOIN Booked B
   ON C.id = B.campaign_id 
   GROUP BY P.id, P.parent, A.advertiser,  Q
-  ORDER BY P.id, A.advertiser, Q
+  ORDER BY P.id, A.advertiser, Q;
 
 CREATE OR REPLACE VIEW HistoricalbyQ AS
 SELECT channel, cast (date_part('year', B.date) || ' ' || 'Q' || date_part('quarter', B.date) AS Varchar) AS Q,  sum("actualRev") AS Actual
