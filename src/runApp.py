@@ -70,6 +70,29 @@ def get_historicalbyq():
     res = pivot_1(data)
     return json_obj(res)
 
+@app.route('/api/thisrev')
+def get_thisrev():
+    data = get_sql('SELECT * FROM This_Rev')
+    res = pivot_1(data)
+    return json_obj(res)
+
+@app.route('/api/thismonth')
+def get_thismonth():
+    data = get_sql('SELECT * FROM This_month')
+    return jsonify(data)
+
+@app.route('/api/thisquarter')
+def get_thisquarter():
+    data = get_sql('SELECT * FROM This_quarter')
+    return jsonify(data)
+
+@app.route('/api/thisyear')
+def get_thisyear():
+    data = get_sql('SELECT * FROM This_year')
+    return jsonify(data)
+
+
+
 
 """
 data = get_sql('SELECT * FROM HistoricalCPM')

@@ -14,3 +14,13 @@ CampaignApp.filter('myCurrency', function() {
 });
 
 
+CampaignApp.filter('myCurrencyThous', function() {
+	return function(number, decPlaces, decimalSep, thousandSep) {
+		decPlaces = decPlaces || 0;
+		var currencySymbol = currencySymbol || "$";
+		decimalSep = decimalSep || ".";
+		thousandSep = thousandSep || ",";
+		var numberThous = number/1000;
+		return currencySymbol + (numberThous).formatMoney(decPlaces, decPlaces, thousandSep);
+	};
+});

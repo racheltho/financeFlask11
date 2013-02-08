@@ -35,6 +35,26 @@ def get_or_create(session, model, **kwargs):
                 instance = model(**kwargs)
                 session.add(instance)
                 return instance
+ 
+def json_dict(o):
+    return json_obj([dict(d) for d in o])
+
+def json_obj(o):
+    return jsonify(dict(res=o))
+
+def get_sql(sql):
+    s = db.session
+    sql = a.text(sql)
+    res = s.execute(sql);
+    return  res.fetchall()
+
+def pivot_1(data):
+    cols = sorted(set(row[1] for row in data))
+    pivot = list((k, defaultdict(lambda: 0, (islice(d, 1, None) for d in data))) 
+             for k, data in groupby(data, itemgetter(0)))
+    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
+    return [['Key'] + cols] + res
+ 
     
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -278,8 +298,18 @@ def int_or_none(entry):
     else:
         return None
 
+def populateProduct(wb): 
+    sh = wb.sheet_by_name('Product')
+    for rownum in range(0,8):
+        prod = sh.cell(rownum,0).value
+        p = Product(product = prod)
+        db.session.add(p)
+        db.session.commit()
+    print("PopulateProduct Finished")
 
-def populateChannel(wb):           
+
+
+def populateChannel(wb): 
     sh = wb.sheet_by_name('Channel')
     for rownum in range(0,4):
         chan = sh.cell(rownum,0).value
@@ -387,7 +417,10 @@ def populateCampaignRevenue(wb):
         campaign = sh.cell(rownum,13).value
         t = sh.cell(rownum,3).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
-        channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,5).value)
+        chan = sh.cell(rownum,5).value
+        if(chan == "MSLAL"):
+            chan = "Publisher"
+        channel = get_or_create(db.session, Channel, channel = chan)        
         advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
         industry = sh.cell(rownum,8).value
         agency = sh.cell(rownum,9).value
@@ -427,34 +460,36 @@ def populateCampaignRevenue(wb):
         if instance:
             instance.rep.append(rep)
             db.session.commit()
+            c = instance
         else: 
             if sfdc_oid == 11919:
                 instance = db.session.query(Campaign).filter_by(sfdc_oid = 11919).first()
                 if instance:
+                    c = instance
                     instance.rep.append(rep)
                     db.session.commit()
                 else:
-                    a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
+                    c = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
                                  industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
                                  contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
-                    db.session.add(a)
+                    db.session.add(c)
                     db.session.commit()  
             else:
-                a = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
+                c = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, 
                              industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
                              contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
                 print(campaign)
-                db.session.add(a)
+                db.session.add(c)
                 db.session.commit()
 
-            campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+            #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
             
             for colnum in range(26,62):
                 rev = sh.cell(rownum,colnum).value
                 if isinstance(rev,float) and rev != 0.0: 
                     mydate = xldate_as_tuple(sh.cell(4,colnum).value,0)[0:3]
                     pyDate = date(*mydate)
-                    a = Booked(campaign=campaignObj, date=pyDate, bookedRev=rev)
+                    a = Booked(campaign=c, date=pyDate, bookedRev=rev)
                     db.session.add(a)
             db.session.commit()
             for colnum in range(62,98):
@@ -462,7 +497,7 @@ def populateCampaignRevenue(wb):
                 if isinstance(rev,float) and rev != 0.0: 
                     mydate = xldate_as_tuple(sh.cell(4,colnum).value,0)[0:3]
                     pyDate = date(*mydate)
-                    a = Actual(campaign=campaignObj, date=pyDate, actualRev=rev)
+                    a = Actual(campaign=c, date=pyDate, actualRev=rev)
                     db.session.add(a)
             db.session.commit()
         
@@ -497,7 +532,7 @@ def populateCampaignRevenue09(wb):
         contracted_deal = sh.cell(rownum,12).value
         if not isinstance(contracted_deal, float):  
             contracted_deal = None    
-        revised_deal = sh.cell(rownum,14).value
+        revised_deal = sh.cell(rownum,12).value
         if not isinstance(revised_deal, float):  
             revised_deal = None
         # For multiple reps:
@@ -527,8 +562,67 @@ def populateCampaignRevenue09(wb):
                 a = Actual(campaign=c, date=pyDate, actualRev=rev)
                 db.session.add(a)
                 db.session.commit()
-        
-    print("PopulateRevenue Finished") 
+    print("PopulateCampaignRevenue09 Finished") 
+
+
+def populateCampaignRevenue10(wb):         
+    sh = wb.sheet_by_name('Rev10')
+     
+    for rownum in range(3,881): #sh.nrows):
+        t = sh.cell(rownum,2).value
+        product = get_or_create(db.session, Product, product = sh.cell(rownum,3).value)
+        cp = sh.cell(rownum,4).value
+        channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,5).value)
+        agency = sh.cell(rownum,16).value
+        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,20).value)
+        campaign = sh.cell(rownum,21).value
+               
+        industry = sh.cell(rownum,15).value
+        if(industry == '(blank)'):
+            industry = None
+        repid = sh.cell(rownum,22).value
+        if(repid == "VB"):
+            repid = "VV"
+        rep = get_or_create(db.session, Rep, repID = repid)
+        try:
+            start_date = xldate_as_tuple(sh.cell(rownum,24).value,0)[0:3]
+            py_start = date(*start_date)
+            end = xldate_as_tuple(sh.cell(rownum,25).value,0)[0:3]
+            py_end = date(*end)
+        except:
+            pass                            
+        contracted_deal = sh.cell(rownum,28).value
+        if not isinstance(contracted_deal, float):  
+            contracted_deal = None    
+        revised_deal = sh.cell(rownum,28).value
+        if not isinstance(revised_deal, float):  
+            revised_deal = None
+        # For multiple reps:
+        instance = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+        if instance:
+            print("Alert, Alert, Alert, Alert")
+            print(campaign)
+            instance.rep.append(rep)
+            db.session.commit()
+            c = instance
+        else: 
+            c = Campaign(campaign = campaign, type = t, product = product, channel = channel, advertiser = advertiser, industry = industry, 
+                         agency = agency, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, contracted_deal = contracted_deal, revised_deal = revised_deal)    
+            #print(campaign)
+            db.session.add(c)
+            db.session.commit()
+
+        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
+            
+        for colnum in range(37,61):
+            rev = sh.cell(rownum,colnum).value
+            if isinstance(rev,float) and rev != 0.0: 
+                mydate = xldate_as_tuple(sh.cell(2,colnum).value,0)[0:3]
+                pyDate = date(*mydate)
+                a = Actual(campaign=c, date=pyDate, actualRev=rev)
+                db.session.add(a)
+                db.session.commit()
+    print("PopulateCampaignRevenue10 Finished") 
 
 
 def cleanDB():
@@ -548,24 +642,11 @@ def cleanDB():
     s.query(Product).delete()
 """
 
-def json_dict(o):
-    return json_obj([dict(d) for d in o])
+## XXX Doesn't work
+def DropDB():
+    db.session.execute(a.text('DROP TABLE Product CASCADE')); 
+    db.session.execute(a.text('DROP TABLE Channel CASCADE')); 
 
-def json_obj(o):
-    return jsonify(dict(res=o))
-
-def get_sql(sql):
-    s = db.session
-    sql = a.text(sql)
-    res = s.execute(sql);
-    return  res.fetchall()
-
-def pivot_1(data):
-    cols = sorted(set(row[1] for row in data))
-    pivot = list((k, defaultdict(lambda: 0, (islice(d, 1, None) for d in data))) 
-             for k, data in groupby(data, itemgetter(0)))
-    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
-    return [['Key'] + cols] + res
 
 
 '''
@@ -574,20 +655,15 @@ res = pivot_1(data)
 print(json.dumps(list(res), indent=2))
 '''
 
+#DropDB()
 db.create_all()   
 wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData02062013.xls')
 #populateChannel(wb)
+#populateProduct(wb)
 #populateParent(wb)
 #populateAdvertiser(wb)
 #populateRep(wb)
-
-#sh = wb.sheet_by_name('Rev020113')
-#for colnum in range(26,63):
-#    mydate = xldate_as_tuple(sh.cell(4,colnum).value,0)[0:3]
-#    pyDate = date(*mydate)
-#    print(colnum)
-#    print(pyDate)
-
+#populateCampaignRevenue10(wb)
 #populateCampaignRevenue(wb)
 #populateCampaignRevenue09(wb)
 

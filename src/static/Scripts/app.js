@@ -197,6 +197,7 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
     $scope.sfdcid = $routeParams.fromsfdc;
     
 	if ($scope.sfdcid) {
+		debugger;
 		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
 			$.each(['campaign', 'rep_id', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
 			function(i,o) {
@@ -237,10 +238,23 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Adverti
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 var DashboardCtrl = function ($scope, $http) {
- 	$http.get('/api/bookeddata').success(function(data) {
- 		//debugger;
- 		$scope.booked = data.res;
+	$http.get('/api/thisrev').success(function(data) {
+ 		$scope.this_chart = data.res;
+ 		$scope.this_keys = $scope.this_chart[0].slice(1);
+ 		var myslice = $scope.this_chart.slice(1);
+ 		$scope.this_data = []; 
+ 		$.each(myslice, function(i,o){ $scope.this_data[i] = o[0].split('|').concat(o.slice(1));});
  	});
+
+	// return true if item at this index is the same as the last one 	
+ 	$scope.channel = function(index) {
+ 		if(index === 0 || !$scope.this_data[index]) {return true;}
+ 		if($scope.this_data[index-1][0] === $scope.this_data[index][0]) {return false;}
+ 		return true;
+ 	};
+ 	$scope.spanamt = function(index) {
+ 		return $scope.channel(index+1) ? 1 : 2;
+ 	};
 };
 
 var HistDashboardCtrl = function ($scope, $http) {
