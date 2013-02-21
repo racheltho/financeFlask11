@@ -4,7 +4,7 @@ SELECT CAST(P.id || '|' || P.parent || '|' || A.advertiser AS Varchar) AS A, CAS
 	SUM(B."bookedRev")
   FROM Parent P
   JOIN Advertiser A
-  ON P.id = A.parent_agency_id
+  ON P.id = A.parent_id
   JOIN Campaign C
   ON A.id = C.advertiser_id
   JOIN Booked B

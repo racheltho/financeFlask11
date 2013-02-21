@@ -20,21 +20,14 @@
         <label class="control-label" for="rep">Representatives</label>
         <div class="controls">
         <div ng-repeat="my_rep in item.rep">
-            <select ui-select2 ng-model="my_rep.id" style="width: 60%" data-placeholder="-- Select One --">
-            	<option></option>
-    			<option ng-repeat="r in select_reps" value="{{r.id}}">{{r.last_name + ", " + r.first_name}}</option>
-  			</select>
+		<input type="text" value="{{my_rep.last_name + ', ' + my_rep.first_name}}" disabled />
         <button  class="btn-small" id="rep_{{my_rep.id}}" ng-click="delete_rep(my_rep)">Del</button>
         <button  class="btn-small" ng-click="get_from_rep(my_rep)">Get</button>
         </div>
         <div>
-			<select ui-select2 ng-model="new_rep" id="new_rep" style="width: 60%" data-placeholder="-- Select One --">
-            	<option></option>
-    			<option ng-repeat="r in select_reps" value="{{r}}">{{r.last_name + ", " + r.first_name}}</option>
-  			</select>
+        	<input ui-select2="select_reps" ng-model="new_rep" data-placeholder="-- Select One --" />
   		<button class="btn-small" ng-click="add_rep()">Add</button>
   		</div> 
-         <!--<button  class="btn" ng-click="add_rep()">Add additional rep</button>-->
         </div> 
     </div>
     <div class="control-group" ng-class="{error: detailForm.type.$invalid}">

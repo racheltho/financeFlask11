@@ -1,9 +1,11 @@
 from models import *
 from db_utils import *
+from flask import Response
 
 import flask.ext.restless
 import datetime
 import sqlalchemy as a
+import string
 
 # Create the Flask-Restless API manager.
 
@@ -20,9 +22,45 @@ manager.create_api(Rep, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_pa
 manager.create_api(Product, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
 manager.create_api(Booked, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
 manager.create_api(Actual, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
+manager.create_api(Campaignchange, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20, max_results_per_page=10000)
+manager.create_api(Bookedchange, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
+manager.create_api(Actualchange, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
 manager.create_api(Sfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20, max_results_per_page=10000)
 manager.create_api(Channel, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Sfdccampaign, methods=['GET'], results_per_page=20)
+
+@app.route('/static/api/campaigntoexcel')
+def writeToExcel():
+    data = get_sql('SELECT * FROM CampaignBooked')
+    newdata = []
+    
+    for i in range(0,len(data)):
+        newdata.append([data[i][0:18]] + [data[i][19]] + [data[i][20]])
+        
+    res = pivot_1(newdata)
+    
+    transformed_data = []
+    temp = ['Campaign','Type','Product','Channel','Advertiser','Industry','Agency', 'SFDC OID', 'CPA/CPM', 'Start Date', 'End Date', 'CPM Price', 'Contracted Impressions', 'Booked Impressions', 'Delivered Impressions', 'Contracted Deal', 'Revised Deal']
+    temp += res[0][1:len(res[0])]
+    transformed_data.append(temp)
+    
+    for i in range(1,len(res)):
+        temp = list(res[i][0])
+        temp += res[i][1:len(res[i])]
+        transformed_data.append(temp)
+   
+    filename = 'salesmetric' + str(D.today().date()) + '.csv'
+    lines = csv2string(transformed_data)
+    resp = Response(lines, status=200, mimetype='text/csv')
+    resp.headers['Content-Disposition'] = 'attachment; filename=' + filename
+    return resp 
+    
+    """
+    with open(filename, 'wb') as fout:
+        writer = csv.writer(fout)
+        writer.writerows(transformed_data)
+    return json.dumps(filename)
+    """
 
 @app.route('/api/agencytable/<int:agencyid>')
 def get_agency_table(agencyid):

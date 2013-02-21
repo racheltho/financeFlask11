@@ -1,11 +1,27 @@
 ﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
 
+CREATE OR REPLACE VIEW CampaignBooked AS
+SELECT C.campaign, C.type, P.product, CH.channel, A.advertiser, C.industry, C.agency, C.sfdc_oid, C.rep_id, C.cp, C.start_date, C.end_date, 
+  C.cpm_price, C.contracted_impr, C.booked_impr, C.delivered_impr, C.contracted_deal, C.revised_deal, C.opportunity, B.date, B."bookedRev"
+  FROM campaign C
+  JOIN booked B
+  ON C.id = B.campaign_id
+  JOIN advertiser A
+  ON C.advertiser_id = A.id
+  JOIN channel CH
+  ON C.channel_id = CH.id
+  JOIN Product P
+  ON C.product_id = P.id
+  ORDER BY C.campaign;
+
+
+
 CREATE OR REPLACE VIEW Agencytable AS
 SELECT CAST(P.id || '|' || P.parent || '|' || A.advertiser AS Varchar) AS A, CAST (date_part('year', B.date) || ' ' || 'Q' || date_part('quarter', B.date) AS Varchar) AS Q,
 	SUM(B."bookedRev")
   FROM Parent P
   JOIN Advertiser A
-  ON P.id = A.parent_agency_id
+  ON P.id = A.parent_id
   JOIN Campaign C
   ON A.id = C.advertiser_id
   JOIN Booked B

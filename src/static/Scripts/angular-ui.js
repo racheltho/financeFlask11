@@ -562,7 +562,7 @@ angular.module('ui.directives').directive('uiAnimate', ['ui.config', '$timeout',
  *     This change is so that you do not have to do an additional query yourself on top of Select2's own query
  * @params [options] {object} The configuration options passed to $.fn.select2(). Refer to the documentation
  */
-angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$http', function (uiConfig, $http) {
+angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$timeout', function (uiConfig, $timeout) {
   var options = {};
   if (uiConfig.select2) {
     angular.extend(options, uiConfig.select2);
@@ -581,7 +581,7 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$http', fu
         repeatOption = tElm.find('option[ng-repeat], option[data-ng-repeat]');
 
         if (repeatOption.length) {
-		  repeatAttr = repeatOption.attr('ng-repeat') || repeatOption.attr('data-ng-repeat');
+		      repeatAttr = repeatOption.attr('ng-repeat') || repeatOption.attr('data-ng-repeat');
           watch = jQuery.trim(repeatAttr.split('|')[0]).split(' ').pop();
         }
       }
@@ -604,14 +604,23 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$http', fu
             if (isSelect) {
               elm.select2('val', controller.$modelValue);
             } else {
-              if (isMultiple && !controller.$modelValue) {
-                elm.select2('data', []);
+              if (isMultiple) {
+                if (!controller.$modelValue) {
+                  elm.select2('data', []);
+                } else if (angular.isArray(controller.$modelValue)) {
+                  elm.select2('data', controller.$modelValue);
+                } else {
+                  elm.select2('val', controller.$modelValue);
+                }
               } else {
-                elm.select2('data', controller.$modelValue);
+                if (angular.isObject(controller.$modelValue)) {
+                  elm.select2('data', controller.$modelValue);
+                } else {
+                  elm.select2('val', controller.$modelValue);
+                }
               }
             }
           };
-
 
           // Watch the options dataset for changes
           if (watch) {
@@ -650,16 +659,21 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$http', fu
           elm.select2(value && 'disable' || 'enable');
         });
 
-        scope.$watch(attrs.ngMultiple, function(newVal) {
-          elm.select2(opts);
-        });
+        if (attrs.ngMultiple) {
+          scope.$watch(attrs.ngMultiple, function(newVal) {
+            elm.select2(opts);
+          });
+        }
 
         // Set initial value since Angular doesn't
         elm.val(scope.$eval(attrs.ngModel));
 
         // Initialize the plugin late so that the injected DOM does not disrupt the template compiler
-        setTimeout(function () {
+        $timeout(function () {
           elm.select2(opts);
+          // Not sure if I should just check for !isSelect OR if I should check for 'tags' key
+          if (!opts.initSelection && !isSelect)
+            controller.$setViewValue(elm.select2('data'));
         });
       };
     }

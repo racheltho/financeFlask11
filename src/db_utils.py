@@ -6,18 +6,20 @@ Created on Jan 21, 2013
 
 from models import *
 from datetime import date
+import StringIO
+import csv
 
 def find_rep_db(name, s):
-    print(name)
     last,first = name.split(', ')
     res = s.query(Rep).filter_by(last_name=last)
     res = res.filter(Rep.first_name.ilike(first + '%')).first()
     if (res): 
-        print(res.last_name)
         return res
     res = s.query(Rep).filter_by(last_name=last).first()
-    #if(name == 'Bartlett, Valerie'):
-    #    res = s.query(Rep).filter_by(last_name="Vinco", first_name="Valerie").first()
+    if (res): 
+        return res
+    res = s.query(Rep).filter_by(first_name=first).first()
+#    res = s.query(Rep).filter_by(last_name="Vinco", first_name="Valerie").first()
     return res
 
 def id_or_none(o):
@@ -34,10 +36,13 @@ def sfdc_to_campaign(sfdcid, ses):
     c.end_date = s.end_date
     a = ses.query(Advertiser).filter_by(advertiser = s.advertiser).first()
     c.advertiser_id = id_or_none(a)
+#    if(a != None):
+#        a = find_similar_adv(s.advertiser)
+    c.advertiser = a
     c.contracted_deal = s.budget
     c.cp = s.cp
     c.sfdc_oid = s.oid
-    c.rep_id = id_or_none(r)
+    c.rep = [r]
 
     if (r is None): return c
     
@@ -46,3 +51,9 @@ def sfdc_to_campaign(sfdcid, ses):
     c.type = r.type
     
     return c
+
+def csv2string(data):
+    si = StringIO.StringIO()
+    cw = csv.writer(si)
+    cw.writerows(data)
+    return si.getvalue()

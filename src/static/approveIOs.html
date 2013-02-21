@@ -40,7 +40,7 @@
             	<td> {{sfdc_camp.ccp }}</td>
             	<td> {{sfdc_camp.channel.channel}}</td>
             	<td> {{sfdc_camp.advertiser.advertiser }}</td>
-            	<td> {{sfdc_camp.last_name + ', ' + sfdc_camp.first_name }}</td>
+            	<td> {{show_name(sfdc_camp.last_name, sfdc_camp.first_name) }}</td>
            	 	<td> {{sfdc_camp.cstart_date | date}}</td>
             	<td> {{sfdc_camp.cend_date | date}}</td>
             	<td> {{sfdc_camp.revised_deal | currency }}</td>

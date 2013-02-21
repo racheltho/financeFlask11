@@ -20,7 +20,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            otherwise({ redirectTo: '/' });
     });     
 
-$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent'], 
+$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange'], 
 	function(i, s) {
 		CampaignApp.factory(s, function ($resource) {
 		    return $resource('/api/' + s.toLowerCase() + '/:id', 
@@ -37,7 +37,15 @@ var HomeCtrl = function($scope, $location) {
 	
 };
 
-var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
+var ListCtrl = function ($scope, $location, $http, Campaign, Booked, Actual) {
+	
+	$scope.download = function(){
+		$http.get('/api/campaigntoexcel').success(function(csv) {
+			$scope.downloadtext = "Download successful";		
+		});	
+	};
+	
+
     var make_query = function() {
         var q = order_by($scope.sort_order, $scope.sort_desc ? "desc": "asc");
         if ($scope.query) {
@@ -85,24 +93,18 @@ var ListCtrl = function ($scope, $location, Campaign, Booked, Actual) {
    
 };
 
-var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, Parent) {
+var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, Parent, Bookedchange) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
 			$scope[ngmodel_fld] = items.objects;
 	 	});
 	};
-	
-	var q = order_by("last_name", "asc");
-	q.filters = [{name: "seller", op: "eq", val: true}/*, {name: "termination_date", op:"is_null" }*/ ];
-	Rep.get({q: angular.toJson(q)}, function(items) {
-			$scope.select_reps = items.objects;
-	});
 
 	$scope.add_rep = function() {
 		if (!$scope.new_rep) {return;}
 		var reps = $scope.item.rep;
-		var new_rep = $.parseJSON($scope.new_rep);
+		var new_rep = $scope.new_rep;
 		if(_.find(reps, function(o) {return o.id === new_rep.id.toString();})) { return; }
 		$scope.item.rep.push(new_rep);
 		$scope.new_rep = "";
@@ -118,8 +120,6 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	};
 		
 	$scope.get_from_rep = function(item){
-		console.log(item);
-		debugger;
 		if (!item) {return;}
     	if (item.product_id) {
         	Product.get( {id: item.product_id}, function(p) {
@@ -156,30 +156,42 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
 	};
 
-	var formatAdv = function(object) {return object.advertiser;};
-	
-	$scope.select_advertisers = {
-	    formatSelection: formatAdv,
-	    formatResult: formatAdv,
-	    minimumInputLength: 2,
-	    ajax: {
-	      url: "/api/advertiser",
-	      data: function (term, page) {
-	        var q = order_by("advertiser", "asc");
-	        q.filters = [{name: "advertiser", op: "ilike", val: "%" + term + "%"} ];
-	        return {q:angular.toJson(q)};
-	      },
-	      results: function (data) {
-	        return {results: data.objects};
-	      }
-	    }
+	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
+		return 	{
+			formatSelection: fmt, formatResult: fmt,
+			minimumInputLength: minchars,
+		    ajax: {
+		      url: "/api/" + name,
+		      data: function (term, page) {
+		        var q = order_by(sort_by, "asc");
+		        q.filters = [{name: sort_by, op: "ilike", val: "%" + term + "%"} ];
+		        if (xtra_filters) {	q.filters = q.filters.concat(xtra_filters); }
+		        return {q:angular.toJson(q)};
+		      },
+		      results: function (data) { return {results: data.objects}; }
+		    },
+			initSelection: function(elm, cb) {
+				var id=$(element).val();
+		        if (id==="") {
+		        	return cb(null);
+		        }
+				return cb(id);
+			}
+		};
 	};
+	
+	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
+		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
+	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
+		'advertiser', 'advertiser', 2);
 	
 	get_sel_list(Product, 'product', "select_products");
 	get_sel_list(Channel, 'channel', "select_channels");
+
+	$scope.item = {};
 }; 
 
-var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
+var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Add';
@@ -191,47 +203,57 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Sfd
     		Sfdc.update({ id: $scope.sfdcid}, {approved:true} );
     	}
         $scope.item.advertiser_id = $scope.item.advertiser.id;
-	    Campaign.save($scope.item, function() { $location.path(path); });
-    };
+        
+	    Campaign.save($scope.item, function() {
+	    	var today = $.datepicker.formatDate('yy-mm-dd', new Date());
+	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
+	    	$.each($scope.item.bookeds, function(index, value){
+	    		Bookedchange.save({campaign_id: value.campaign_id, change_date: today, date: value.date, bookedRev: value.bookedRev});
+	    	});
+	    	$location.path(path); });
+	    };
 
     $scope.sfdcid = $routeParams.fromsfdc;
     
 	if ($scope.sfdcid) {
-		debugger;
 		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
-			$.each(['campaign', 'rep_id', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
-			function(i,o) {
-				if(data[o]) {$scope.item[o] = data[o];}
-			});
+			$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id',
+				'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
+				function(i,o) {	if(data[o]) {$scope.item[o] = data[o];}	});
+			if (data.rep) {
+				$scope.item.rep = data.rep;
+			}
 	        $scope.update_campaign_calcs();
 		});
 	}
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
-var EditCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, $injector, Booked) { 
+var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchange, Bookedchange, Rep, Advertiser, Product, $injector, Booked) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
-    var self = this;
     $scope.btn_text = 'Update';
     $scope.sfdcid = $routeParams.fromsfdc;
 
     Campaign.get({ id: $routeParams.campaignId }, function (item) {
-        self.original = item;
-        $scope.item = new Campaign(item);
+        $scope.item = item;
         $scope.update_campaign_calcs();
     } );
-
-    $scope.isClean = function () {
-        return angular.equals(self.original, $scope.item);
-    };
 
     $scope.save = function () {
     	$scope.item.advertiser_id = $scope.item.advertiser.id;
         Campaign.update({ id: $scope.item.id }, $scope.item, function() {
+        	var today = $.datepicker.formatDate('yy-mm-dd', new Date());
+	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});		
+	    	$.each($scope.item.bookeds, function(index, value){
+	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);  		
+	    		Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	    	});
         	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
         	else {$location.path('/campaigns');} 
-        });
+        });   
     };
     
 };
@@ -311,7 +333,7 @@ var AgencyDashboardCtrl = function($scope, $http, Parent, Advertiser) {
 	
 	var make_ad_query = function() {
         var q = order_by("advertiser", "asc");
-        if ($scope.parent_id) { q.filters = [{ name: "parent_agency_id", op: "eq", val: $scope.parent_id } ];}
+        if ($scope.parent_id) { q.filters = [{ name: "parent_id", op: "eq", val: $scope.parent_id } ];}
         return angular.toJson(q);
     };
 	
@@ -366,6 +388,11 @@ var ApproveIOsCtrl = function($scope, $routeParams, $location, $http, $q, Sfdc, 
         	return angular.toJson(q);
 	};
     	
+    $scope.show_name = function(last, first) {
+    	if (last) {return last + ', ' + first;}
+    	return "";
+    };
+    
     $scope.search = function () {
         var res = Sfdccampaign.get(
             { page: $scope.page, q: make_query(), results_per_page: 20 },
