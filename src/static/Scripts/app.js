@@ -17,6 +17,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/historical', { controller: HistDashboardCtrl, templateUrl: 'historical_dashboard.html' }).
            when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
+           when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
            otherwise({ redirectTo: '/' });
     });     
 
@@ -91,6 +92,28 @@ var ListCtrl = function ($scope, $location, $http, Campaign, Booked, Actual) {
     
     $scope.reset();
    
+};
+
+var CampHistoryCtrl = function($scope, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Actualchange){
+	Campaign.get({ id: $routeParams.campaignId }, function (item) {
+        $scope.campaign = item;
+    });
+    
+    var q = order_by("change_date", "asc");
+    q.filters = [{name: "campaign_id", op: "eq", val: $routeParams.campaignId} ];
+	Campaignchange.get({q: angular.toJson(q)}, function (items) {
+        $scope.campaignchanges = items.objects;
+    });
+	$http.get('/api/bookedchange' + $routeParams.campaignId).success(function(data) {
+		$scope.bookedchanges = data.res;
+ 		$scope.booked_keys = $scope.bookedchanges[0].slice(1);
+ 		$scope.bchanges = $scope.bookedchanges.slice(1);
+	});	
+	$http.get('/api/actualchange' + $routeParams.campaignId).success(function(data) {
+		$scope.actualchanges = data.res;
+ 		$scope.actual_keys = $scope.actualchanges[0].slice(1);
+ 		$scope.achanges = $scope.actualchanges.slice(1);
+	});	
 };
 
 var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, Parent, Bookedchange) {
@@ -205,7 +228,15 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
         $scope.item.advertiser_id = $scope.item.advertiser.id;
         
 	    Campaign.save($scope.item, function() {
-	    	var today = $.datepicker.formatDate('yy-mm-dd', new Date());
+	    	var now = new Date();
+        	var h = now.getHours().toString();
+        	var m = now.getMinutes().toString();
+        	var s = now.getSeconds().toString();
+        	var time = $.map([h, m, s], function(value, idx){ 
+        		if(value.length === 1) {return "0" + value;} 
+        		else {return value;}
+        		});
+        	var today = $.datepicker.formatDate('yy-mm-dd', now) + " " + time[0] + ":" + time[1] + ":" + time[2];
 	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
 	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
 	    	$.each($scope.item.bookeds, function(index, value){
@@ -244,17 +275,29 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
     $scope.save = function () {
     	$scope.item.advertiser_id = $scope.item.advertiser.id;
         Campaign.update({ id: $scope.item.id }, $scope.item, function() {
-        	var today = $.datepicker.formatDate('yy-mm-dd', new Date());
+        	var now = new Date();
+        	var h = now.getHours().toString();
+        	var m = now.getMinutes().toString();
+        	var s = now.getSeconds().toString();
+        	var time = $.map([h, m, s], function(value, idx){ 
+        		if(value.length === 1) {return "0" + value;} 
+        		else {return value;}
+        		});
+        	var today = $.datepicker.formatDate('yy-mm-dd', now) + " " + time[0] + ":" + time[1] + ":" + time[2];
 	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
 	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});		
 	    	$.each($scope.item.bookeds, function(index, value){
-	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);  		
+	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);  
 	    		Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
 	    	});
         	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
         	else {$location.path('/campaigns');} 
         });   
     };
+    
+//    $scope.view_history = function(){
+//    	$location.path('/history/:id');
+//    }
     
 };
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);

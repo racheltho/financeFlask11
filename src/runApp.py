@@ -35,7 +35,7 @@ def writeToExcel():
     newdata = []
     
     for i in range(0,len(data)):
-        newdata.append([data[i][0:18]] + [data[i][19]] + [data[i][20]])
+        newdata.append([data[i][0:17]] + [data[i][18]] + [data[i][19]])
         
     res = pivot_1(newdata)
     
@@ -67,6 +67,19 @@ def get_agency_table(agencyid):
     data = get_sql("SELECT * FROM Agencytable WHERE A LIKE " + str(agencyid) + "|| '|%'")
     res = pivot_1(data)
     return json_obj(res)    
+
+@app.route('/api/bookedchange<int:campaignid>')
+def get_bookedchanges(campaignid):
+    data = get_sql("SELECT change_date, date, \"bookedRev\" FROM bookedchange WHERE campaign_id = " + str(campaignid))
+    res = pivot_1(data)
+    return json_obj(res)
+
+
+@app.route('/api/actualchange<int:campaignid>')
+def get_actualchanges(campaignid):
+    data = get_sql("SELECT change_date, date, \"actualRev\" FROM actualchange WHERE campaign_id = " + str(campaignid))
+    res = pivot_1(data)
+    return json_obj(res)
 
 @app.route('/api/campaign_from_sfdc/<int:sfdcid>')
 def get_campaign_from_sfdc(sfdcid):

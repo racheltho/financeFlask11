@@ -74,11 +74,12 @@ color: #178cb7;
 }
 
 .qc-blue-line {
-	width: 100%; 
+	width: 102%; 
 	height: 3px; 
 	background: #178cb7; 
 	overflow: hidden;
 	margin-bottom: 20px;
+	float: right;
 }
 
 h4.qc-blue{
