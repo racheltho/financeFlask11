@@ -1,7 +1,7 @@
 ﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
 
 CREATE OR REPLACE VIEW CampaignBooked AS
-SELECT C.campaign, C.type, P.product, CH.channel, A.advertiser, C.industry, C.agency, C.sfdc_oid, C.rep_id, C.cp, C.start_date, C.end_date, 
+SELECT C.campaign, C.type, P.product, CH.channel, A.advertiser, C.industry, C.agency, C.sfdc_oid, C.cp, C.start_date, C.end_date, 
   C.cpm_price, C.contracted_impr, C.booked_impr, C.delivered_impr, C.contracted_deal, C.revised_deal, C.opportunity, B.date, B."bookedRev"
   FROM campaign C
   JOIN booked B
@@ -101,3 +101,34 @@ UNION
   ON A.channel_id = C.id
   WHERE (date_part('year', date) = date_part('year', now()))
 GROUP BY channel, cp) ORDER BY 1);
+
+
+CREATE OR REPLACE VIEW BookedChanges AS
+SELECT cast(A.campaign || '|' || BB.change_date || '|' || DD.change_date AS varchar) AS Campaign, BB.date, cast(BB."bookedRev" || '|' || DD."bookedRev" AS Varchar) AS Booked --, BB."bookedRev" - DD."bookedRev" AS Difference
+FROM
+(SELECT B.* 
+FROM bookedchange B
+JOIN
+(SELECT MAX(change_date) AS max_date, campaign_id, date
+  FROM bookedchange
+  WHERE change_date <= current_date - integer '7'
+  GROUP BY campaign_id, date) AS C
+ON B.change_date = C.max_date 
+  AND B.campaign_id = C.campaign_id
+  AND B.date = C.date) AS BB
+JOIN
+(SELECT D.*
+FROM bookedchange D
+JOIN
+(SELECT MAX(change_date) AS max_date, campaign_id, date
+  FROM bookedchange
+  GROUP BY campaign_id, date) AS E
+ON D.change_date = E.max_date 
+  AND D.campaign_id = E.campaign_id
+  AND D.date = E.date) AS DD
+ON BB.campaign_id = DD.campaign_id
+  AND BB.date = DD.date
+JOIN campaign A
+ON A.id = BB.campaign_id
+WHERE BB."bookedRev" - DD."bookedRev" <> 0 AND DD.change_date - BB.change_date > 0
+ORDER BY BB.campaign_id, BB.date
