@@ -9,7 +9,7 @@
 		</thead>
 		<tbody>
 			<tr ng-repeat="item in bchanges">
-				<td>{{item[0] | date:'MM/dd/yy  HH:mm:ss'}}</td>
+				<td>{{item[0] | date}}</td>
 				<td ng-repeat="cell in item.slice(1)">{{cell | myCurrency }}</td>
 			</tr>
 		</tbody>		
@@ -24,7 +24,7 @@
 		</thead>
 		<tbody>
 			<tr ng-repeat="item in achanges">
-				<td>{{item[0] | date:'MM/dd/yy  HH:mm:ss'}}</td>
+				<td>{{item[0] | date}}</td>
 				<td ng-repeat="cell in item.slice(1)">{{cell | myCurrency }}</td>
 			</tr>
 		</tbody>		
@@ -43,7 +43,7 @@
     </thead>
     <tbody>
         <tr ng-repeat="campaignchange in campaignchanges">
-            <td>{{campaignchange.change_date | date:'MM/dd/yy  HH:mm:ss'}}</td>
+            <td>{{campaignchange.change_date | date}}</td>
             <td>{{campaignchange.start_date | date}}</td>
             <td>{{campaignchange.end_date | date}}</td>
             <td>{{campaignchange.cpm_price | currency }}</td>

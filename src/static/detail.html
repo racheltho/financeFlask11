@@ -144,7 +144,7 @@
         <button ng-click="save()" ng-disabled="detailForm.$invalid" class="btn btn-primary">
             {{btn_text}}
         </button>
-         <a href="#/history/{{item.id}}"><button class="btn"> View History</button></a>
+         <a href="#/history/{{item.id}}"><button ng-show="history" class="btn"> View History</button></a>
         <button ng-click="cancel()" class="btn">Cancel</button>
     </div>
 </div>
