@@ -17,6 +17,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/historical', { controller: HistDashboardCtrl, templateUrl: 'historical_dashboard.html' }).
            when('/approveIOs', { controller: ApproveIOsCtrl, templateUrl: 'approveIOs.html' }).
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
+           when('/weekoverweek', { controller: WeekOverWeekCtrl, templateUrl: 'weekoverweek.html' }).
            when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
            otherwise({ redirectTo: '/' });
     });     
@@ -115,6 +116,20 @@ var CampHistoryCtrl = function($scope, $routeParams, $http, Campaign, Campaignch
  		$scope.achanges = $scope.actualchanges.slice(1);
 	});	
 };
+
+var WeekOverWeekCtrl = function($scope, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Actualchange){
+	$http.get('/api/newbookedchanges').success(function(data){
+		$scope.newchanges = data.res;
+		$scope.changes_keys = $scope.newchanges[0].slice(1);
+		var myslice = $scope.newchanges.slice(1);
+ 		$scope.changes_data = [];
+ 		debugger;
+ 		$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat(o.slice(1));});
+	});
+			
+	
+};
+
 
 var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, Parent, Bookedchange) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
@@ -229,14 +244,8 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
         
 	    Campaign.save($scope.item, function() {
 	    	var now = new Date();
-        	var h = now.getHours().toString();
-        	var m = now.getMinutes().toString();
-        	var s = now.getSeconds().toString();
-        	var time = $.map([h, m, s], function(value, idx){ 
-        		if(value.length === 1) {return "0" + value;} 
-        		else {return value;}
-        		});
-        	var today = $.datepicker.formatDate('yy-mm-dd', now) + " " + time[0] + ":" + time[1] + ":" + time[2];
+        	var today = $.datepicker.formatDate('yy-mm-dd', now); 
+        	var q = order_by("change_date", "asc");
 	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
 	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
 	    	$.each($scope.item.bookeds, function(index, value){
@@ -266,6 +275,7 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 
     $scope.btn_text = 'Update';
     $scope.sfdcid = $routeParams.fromsfdc;
+    $scope.history = true;
 
     Campaign.get({ id: $routeParams.campaignId }, function (item) {
         $scope.item = item;
@@ -276,19 +286,32 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
     	$scope.item.advertiser_id = $scope.item.advertiser.id;
         Campaign.update({ id: $scope.item.id }, $scope.item, function() {
         	var now = new Date();
-        	var h = now.getHours().toString();
-        	var m = now.getMinutes().toString();
-        	var s = now.getSeconds().toString();
-        	var time = $.map([h, m, s], function(value, idx){ 
-        		if(value.length === 1) {return "0" + value;} 
-        		else {return value;}
-        		});
-        	var today = $.datepicker.formatDate('yy-mm-dd', now) + " " + time[0] + ":" + time[1] + ":" + time[2];
-	    	Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
-	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});		
+        	var today = $.datepicker.formatDate('yy-mm-dd', now); 
+        	var q = order_by("change_date", "asc");
+        	q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today} ];
+			Campaignchange.get({q: angular.toJson(q)}, function (item) {
+				var mycc = item.objects[0];
+				if(mycc){
+					Campaignchange.update({id: mycc.id, campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    				end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
+				}else{
+					Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    				end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
+	    		}
+			});
+    		
 	    	$.each($scope.item.bookeds, function(index, value){
-	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);  
-	    		Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
+	    		var q = order_by("change_date", "asc");
+        		q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
+				Bookedchange.get({q: angular.toJson(q)}, function (item) {
+					var mybc = item.objects[0];
+					if(mybc){
+	    				Bookedchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	    			}else{
+	    				Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	    			}
+	    		});
 	    	});
         	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
         	else {$location.path('/campaigns');} 

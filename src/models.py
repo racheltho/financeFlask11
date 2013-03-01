@@ -296,7 +296,7 @@ class Rep(db.Model):
 
 class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date_created = db.Column(db.DateTime)
+    date_created = db.Column(db.Date)
     campaign = db.Column(db.Unicode)
     type = db.Column(db.Unicode)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
@@ -349,7 +349,7 @@ class Campaignchange(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
     campaign = db.relationship('Campaign')
-    change_date = db.Column(db.DateTime)
+    change_date = db.Column(db.Date)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     cpm_price = db.Column(db.Float)
@@ -358,7 +358,7 @@ class Campaignchange(db.Model):
 
 class Booked(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date_created = db.Column(db.DateTime)
+    date_created = db.Column(db.Date)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
     campaign = db.relationship('Campaign', backref=backref("bookeds", cascade="all,delete"))
     date = db.Column(db.Date)
@@ -368,13 +368,13 @@ class Bookedchange(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
     campaign = db.relationship('Campaign', backref=backref("bookedchange", cascade="all,delete"))
-    change_date = db.Column(db.DateTime)
+    change_date = db.Column(db.Date)
     date = db.Column(db.Date)
     bookedRev = db.Column(db.Float)    
     
 class Actual(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date_created = db.Column(db.DateTime)
+    date_created = db.Column(db.Date)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
     campaign = db.relationship('Campaign', backref=backref("actuals", cascade="all,delete"))    
     date = db.Column(db.Date)    
@@ -384,7 +384,7 @@ class Actualchange(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
     campaign = db.relationship('Campaign', backref=backref("actualchange", cascade="all,delete"))    
-    change_date = db.Column(db.DateTime)
+    change_date = db.Column(db.Date)
     date = db.Column(db.Date)    
     actualRev = db.Column(db.Float)    
     
@@ -670,7 +670,7 @@ def populateCampaignRevenue(wb):
     
     for rownum in range(5,5092): #sh.nrows):
         campaign = sh.cell(rownum,13).value
-        date_created = D.now()
+        date_created = date(2013, 2, 6)
         t = sh.cell(rownum,3).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
         chan = sh.cell(rownum,5).value
@@ -740,7 +740,7 @@ def populateCampaignRevenue(wb):
                 print(campaign)
                 db.session.add(c)
                 db.session.commit()
-                cc = Campaignchange(campaign = c, change_date = D.now(), start_date = py_start, end_date = py_end, cpm_price = cpm_price, revised_deal = revised_deal)
+                cc = Campaignchange(campaign = c, change_date = date_created, start_date = py_start, end_date = py_end, cpm_price = cpm_price, revised_deal = revised_deal)
                 db.session.add(cc)
                 db.session.commit()
 
@@ -755,9 +755,9 @@ def populateCampaignRevenue(wb):
                     rev = book_instance.bookedRev + rev
                     book_instance.bookedRev = rev
                 else:    
-                    a = Booked(campaign=c, date_created = D.now(), date=pyDate, bookedRev=rev)
+                    a = Booked(campaign=c, date_created = date_created, date=pyDate, bookedRev=rev)
                     db.session.add(a)
-                aa = Bookedchange(campaign=c, change_date = D.now(), date=pyDate, bookedRev = rev)
+                aa = Bookedchange(campaign=c, change_date = date_created, date=pyDate, bookedRev = rev)
                 db.session.add(aa)
                 db.session.commit()
             
@@ -771,9 +771,9 @@ def populateCampaignRevenue(wb):
                     rev = actual_instance.actualRev + rev
                     actual_instance.actualRev = rev
                 else:    
-                    a = Actual(campaign=c, date_created = D.now(), date=pyDate, actualRev=rev)
+                    a = Actual(campaign=c, date_created = date_created, date=pyDate, actualRev=rev)
                     db.session.add(a)
-                aa = Actualchange(campaign=c, change_date = D.now(), date=pyDate, actualRev = rev)                    
+                aa = Actualchange(campaign=c, change_date = date_created, date=pyDate, actualRev = rev)                    
                 db.session.add(aa)
                 db.session.commit()
         

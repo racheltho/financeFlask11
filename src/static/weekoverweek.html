@@ -1,0 +1,15 @@
+
+
+<h1>Recent Changes</h1>
+	
+	<h4 class="qc-blue">Client Count</h4>
+		<table class="table table-striped table-bordered table-hover">
+		<thead>
+			<th colspan="2">Campaign</th>
+			<th ng-repeat="key in changes_keys" class="rev">{{key}}</th>
+		</thead>
+		<tr ng-repeat="item in changes_data">
+			<td rowspan=2>{{item[0]}}</td><td>{{item[1]}}</td>
+				<td ng-repeat="cell in item.slice(2)" class="rev"> {{ cell | number }}</td>
+		</tr>
+	</table>

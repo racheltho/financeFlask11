@@ -62,6 +62,13 @@ def writeToExcel():
     return json.dumps(filename)
     """
 
+@app.route('/api/newbookedchanges')
+def get_booked_changes():
+    data = get_sql("SELECT * FROM NewBookedChanges")
+    res = pivot_1(data)
+    return json_obj(res)
+
+
 @app.route('/api/agencytable/<int:agencyid>')
 def get_agency_table(agencyid):
     data = get_sql("SELECT * FROM Agencytable WHERE A LIKE " + str(agencyid) + "|| '|%'")
