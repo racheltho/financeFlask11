@@ -123,8 +123,19 @@ var WeekOverWeekCtrl = function($scope, $routeParams, $http, Campaign, Campaignc
 		$scope.changes_keys = $scope.newchanges[0].slice(1);
 		var myslice = $scope.newchanges.slice(1);
  		$scope.changes_data = [];
- 		debugger;
- 		$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat(o.slice(1));});
+ 		var temp = [];
+ 		var obj = {};
+ 		$.each(myslice, function(i,o){ 
+ 			temp = o[0].split('|');
+ 			obj = { data1: [temp[0]].concat(temp[1]), data2: [temp[2]] };
+ 			$.each(o.slice(1), function(i2, o2){ obj.data1 = obj.data1.concat(parseFloat(o2.split('|')[0]));
+ 												 obj.data2 = obj.data2.concat(parseFloat(o2.split('|')[1]));});
+ 			$scope.changes_data.push(obj);
+ 		});
+ 		//$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat(o.slice(1));});
+		//console.log($scope.changes_data);
+		//$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat($.each(o.slice(1), function(i2, o2){ return o2.split('|')}));})
+		debugger;
 	});
 			
 	

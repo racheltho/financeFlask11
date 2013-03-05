@@ -65,7 +65,7 @@ def writeToExcel():
 @app.route('/api/newbookedchanges')
 def get_booked_changes():
     data = get_sql("SELECT * FROM NewBookedChanges")
-    res = pivot_1(data)
+    res = pivot_2(data)
     return json_obj(res)
 
 

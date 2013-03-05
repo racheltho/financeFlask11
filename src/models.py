@@ -90,6 +90,13 @@ def pivot_1(data):
     res = [[k] + [details[c] for c in cols] for k, details in pivot] 
     return [['Key'] + cols] + res
  
+def pivot_2(data):
+    cols = sorted(set(row[1] for row in data))
+    pivot = list((k, defaultdict(lambda: u'0|0', (islice(d, 1, None) for d in data))) 
+             for k, data in groupby(data, itemgetter(0)))
+    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
+    return [['Key'] + cols] + res 
+ 
 def pivot_19(data):
     cols = sorted(set(row[19] for row in data))
     print(cols)
@@ -963,8 +970,11 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #populateCampaignRevenue09(wb)
 #readSFDCexcel()
 
+
 #sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
 #ac = sfdc_from_sfdc(sf)
+
+
 
 
 #import pdb; pdb.set_trace()
