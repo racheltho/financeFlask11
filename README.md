@@ -9,7 +9,7 @@ Project Summary
 
 The basic layout is as follows:
 
-<h3>models.py:<h3>
+<h3>models.py:</h3>
 Here is the code to create the Flask application and the Flask-SQLAlchemy object.  This creates the connection with the database, automates the creation of tables corresponding to the classes I define next, and allows for the creation of sessions in which records are added to the tables.
 
 <pre><code>
@@ -117,7 +117,7 @@ Here is my html code:
 	```</code></pre>
 
 And here is the code within models.py to create the join:
-<pre><code>
+<pre><code class="python">
 ```python
 sfdc_table = Sfdc.__table__
 campaign_table = Campaign.__table__
