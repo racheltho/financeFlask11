@@ -58,6 +58,7 @@ In order to do this, I needed ng-repeat to loop through an outerjoin of SFDC (sa
 
 
 Here is my html code:
+<pre><code>
 	<h2>Approve new and revised IOs</h2>
 	<form class="form-search">
 	    <div class="input-append">
@@ -112,7 +113,7 @@ Here is my html code:
         	    </tr>
        	    	</tbody>
 	</table>
-	</code>
+	</code></pre>
 
 And here is the code within models.py to create the join:
 <code>
