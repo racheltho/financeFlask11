@@ -58,62 +58,61 @@ In order to do this, I needed ng-repeat to loop through an outerjoin of SFDC (sa
 
 
 Here is my html code:
-<code>
-<h2>Approve new and revised IOs</h2>
-<form class="form-search">
-    <div class="input-append">
-        <input type="text" ng-model="query" class="input-medium search-query" placeholder="Search">
-        <button ng-click="reset()" type="submit" class="btn"><i class="icon-search"></i></button>    
-    </div>
-    <button ng-click="query=''; reset()" ng-disabled="!query" type="submit" class="btn">Reset</button>
-   	</div>
-</form>
+	<h2>Approve new and revised IOs</h2>
+	<form class="form-search">
+	    <div class="input-append">
+        	<input type="text" ng-model="query" class="input-medium search-query" placeholder="Search">
+	        <button ng-click="reset()" type="submit" class="btn"><i class="icon-search"></i></button>    
+	    </div>
+	    <button ng-click="query=''; reset()" ng-disabled="!query" type="submit" class="btn">Reset</button>
+	   	</div>
+	</form>
 
-<table class="table table-striped table-condensed table-hover">
-    <thead>
-    	<th></th>
-    	<th>SFDC IO ID</th>
-    	<th>Name</th>
-    	<th>CPA/CPM</th>
-    	<th>Channel</th>
-    	<th>Advertiser</th>
-    	<th>Rep Name</th>
-    	<th>Start Date</th>
-    	<th>End Date</th>
-    	<th>Budget</th>
-        <th></th><th></th>
-    </thead>
-    	<tbody ng-repeat="sfdc_camp in sfdc_camps" id="item_{{sfdc_camp.id}}" class="sfdccamp">
+	<table class="table table-striped table-condensed table-hover">
+    	<thead>
+    		<th></th>
+	    	<th>SFDC IO ID</th>
+    		<th>Name</th>
+	    	<th>CPA/CPM</th>
+	    	<th>Channel</th>
+	    	<th>Advertiser</th>
+	    	<th>Rep Name</th>
+	    	<th>Start Date</th>
+	    	<th>End Date</th>
+	    	<th>Budget</th>
+        	<th></th><th></th>
+	    </thead>
+    		<tbody ng-repeat="sfdc_camp in sfdc_camps" id="item_{{sfdc_camp.id}}" class="sfdccamp">
 			<tr><td> SFDC: </td>
-            <td> {{sfdc_camp.oid}} </td>
-            <td> {{sfdc_camp.ioname}} </td>
-            <td> {{sfdc_camp.cp}} </td>
-            <td> {{sfdc_camp.channel }} </td>
-            <td> {{sfdc_camp.advertiser}} </td>
-            <td> {{sfdc_camp.owner_name}} </td>
-            <td> {{sfdc_camp.start_date | date}} </td>
-            <td> {{sfdc_camp.end_date | date}} </td>
-            <td> {{sfdc_camp.budget | currency}} </td>
-            <td></td><td></td></tr>
-            <tr ng-show="sfdc_camp.campaign"><td> Campaign: </td>
-            	<td> {{sfdc_camp.sfdc_oid}} </td>
-            	<td> {{sfdc_camp.campaign}} </td>
-            	<td> {{sfdc_camp.ccp }}</td>
-            	<td> {{sfdc_camp.channel.channel}}</td>
-            	<td> {{sfdc_camp.advertiser.advertiser }}</td>
-            	<td> {{show_name(sfdc_camp.last_name, sfdc_camp.first_name) }}</td>
-           	 	<td> {{sfdc_camp.cstart_date | date}}</td>
-            	<td> {{sfdc_camp.cend_date | date}}</td>
-            	<td> {{sfdc_camp.revised_deal | currency }}</td>
+	            <td> {{sfdc_camp.oid}} </td>
+	            <td> {{sfdc_camp.ioname}} </td>
+	            <td> {{sfdc_camp.cp}} </td>
+	            <td> {{sfdc_camp.channel }} </td>
+	            <td> {{sfdc_camp.advertiser}} </td>
+	            <td> {{sfdc_camp.owner_name}} </td>
+	            <td> {{sfdc_camp.start_date | date}} </td>
+	            <td> {{sfdc_camp.end_date | date}} </td>
+	            <td> {{sfdc_camp.budget | currency}} </td>
+	            <td></td><td></td></tr>
+	            <tr ng-show="sfdc_camp.campaign"><td> Campaign: </td>
+	            	<td> {{sfdc_camp.sfdc_oid}} </td>
+	            	<td> {{sfdc_camp.campaign}} </td>
+	            	<td> {{sfdc_camp.ccp }}</td>
+	            	<td> {{sfdc_camp.channel.channel}}</td>
+	            	<td> {{sfdc_camp.advertiser.advertiser }}</td>
+	            	<td> {{show_name(sfdc_camp.last_name, sfdc_camp.first_name) }}</td>
+	           	 	<td> {{sfdc_camp.cstart_date | date}}</td>
+        	    	<td> {{sfdc_camp.cend_date | date}}</td>
+            		<td> {{sfdc_camp.revised_deal | currency }}</td>
 				<div><td><a href="#/edit/{{sfdc_camp.cid}}?fromsfdc={{sfdc_camp.id}}"><button>Edit</button></a></td>
-            	<td><button ng-click="approve(sfdc_camp.id)">Approve</button></td></div>
-            </tr>
-            <tr ng-show="!sfdc_camp.campaign">
-            	<td class="camp" colspan="12"> (No campaign) <a href="#/create?fromsfdc={{sfdc_camp.id}}"><button>Create</button></a></td>
-            </tr>
-            </tbody>
-</table>
-</code>
+	            	<td><button ng-click="approve(sfdc_camp.id)">Approve</button></td></div>
+        	    </tr>
+            	<tr ng-show="!sfdc_camp.campaign">
+            		<td class="camp" colspan="12"> (No campaign) <a href="#/create?fromsfdc=	{{sfdc_camp.id}}"><button>Create</button></a></td>
+        	    </tr>
+       	    	</tbody>
+	</table>
+	</code>
 
 And here is the code within models.py to create the join:
 <code>
@@ -128,7 +127,7 @@ When the campaign does not already exist, and the user hits create, the user wil
 var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
-[... Other stuff...]
+... Other stuff...
     
 	if ($scope.sfdcid) {
 		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
