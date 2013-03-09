@@ -9,16 +9,16 @@ Project Summary
 
 The basic layout is as follows:
 
-models.py:
-=========
+<h3>models.py:<h3>
 Here is the code to create the Flask application and the Flask-SQLAlchemy object.  This creates the connection with the database, automates the creation of tables corresponding to the classes I define next, and allows for the creation of sessions in which records are added to the tables.
 
+<pre><code>
 ```python
 app = flask.Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres@localhost/mydatabase11'
 db = flask_sqlalchemy.SQLAlchemy(app)
-```
+```</code></pre>
 
 Below is a sample of one of my classes.  Notice that there are foreign keys joining to the channel and product tables, and a self-join back to the rep table (for the manager).
 <pre><code>```python
@@ -59,6 +59,7 @@ In order to do this, I needed ng-repeat to loop through an outerjoin of SFDC (sa
 
 Here is my html code:
 <pre><code>
+```html
 	<h2>Approve new and revised IOs</h2>
 	<form class="form-search">
 	    <div class="input-append">
@@ -113,18 +114,20 @@ Here is my html code:
         	    </tr>
        	    	</tbody>
 	</table>
-	</code></pre>
+	```</code></pre>
 
 And here is the code within models.py to create the join:
-<code>
+<pre><code>
+```python
 sfdc_table = Sfdc.__table__
 campaign_table = Campaign.__table__
 sfdc_campaign_join = sfdc_table.outerjoin(campaign_table, sfdc_table.c.oid == campaign_table.c.sfdc_oid)
-</code>
+```</code></pre>
 
 When the campaign does not already exist, and the user hits create, the user will be directed to the usual campaign creation form, only with some fields already populated with the relevant info from the SalesForce record.  This is does within app.js, within the CreateCtrl controller.
 
 <pre><code>
+```javascript
 var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
@@ -142,4 +145,4 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 		});
 	}
 };
-</code></pre>
+```</code></pre>
