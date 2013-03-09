@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, sessionmaker, column_property, backref
 from sqlalchemy.ext.declarative import declarative_base
 
 import psycopg2
-import flask.ext.sqlalchemy
+import flask_sqlalchemy
 import xlrd
 import csv
 
@@ -32,7 +32,7 @@ import requests
 app = flask.Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres@localhost/mydatabase11'
-db = flask.ext.sqlalchemy.SQLAlchemy(app)
+db = flask_sqlalchemy.SQLAlchemy(app)
 
 def get_or_create(session, model, **kwargs):
     for name, value in kwargs.items():
@@ -417,37 +417,21 @@ class Sfdc(db.Model):
     approved = db.Column(db.Boolean)
     
 
-    
-
-    
-        
-
 # Create the database tables.
-
 sfdc_table = Sfdc.__table__
 campaign_table = Campaign.__table__
 rep_table = Rep.__table__
 channel_table = Channel.__table__
 sfdc_campaign_join = sfdc_table.outerjoin(campaign_table, sfdc_table.c.oid == campaign_table.c.sfdc_oid)
-#.join(rep_table, campaign_table.c.rep_id == rep_table.c.id)
-#sfdc_campaign_join = sfdc_table.outerjoin(campaign_table, sfdc_table.c.oid == campaign_table.c.sfdc_oid)
 
 # map to it
 class Sfdccampaign(db.Model):
     __table__ = sfdc_campaign_join
     __tablename__ = 'sfdccampaign'
-    #chanid = channel_table.c.id
-    #chanchannel = channel_table.c.channel
-    #rid = rep_table.c.id
-    #rchannel_id = rep_table.c.channel_id
-    #rproduct_id = rep_table.c.product_id
-    #rtype = rep_table.c.type
     cid = campaign_table.c.id
     ccp = campaign_table.c.cp
     cstart_date = campaign_table.c.start_date
     cend_date = campaign_table.c.end_date
-    #cchannel = campaign_table.c.channel
-    #cadvertsier = campaign_table.c.advertiser
 
 
 def strptime_or_none(mydate):
@@ -584,7 +568,6 @@ def populateProduct(wb):
     print("PopulateProduct Finished")
 
 
-
 def populateChannel(wb): 
     sh = wb.sheet_by_name('Channel')
     for rownum in range(0,4):
@@ -594,24 +577,6 @@ def populateChannel(wb):
         db.session.commit()
     print("PopulateChannel Finished")
     
-
-#    sh = wb.sheet_by_name('Industry')     
-#    for rownum in range(1,538): #sh.nrows):
-#        sic = sh.cell(rownum,0).value
-#        naics = sh.cell(rownum,1).value
-#        industry = sh.cell(rownum,2).value            
-#        if isinstance(sic,float):
-#            sic = int(sic)
-#        else:
-#            sic = None 
-#        if isinstance(naics,float):
-#            naics = int(naics)
-#        else:
-#            naics = None    
-#        a = Industry(sic, naics, industry)
-#        db.session.add(a)
-#    db.session.commit()
-#
 
 def populateParent(wb):         
     sh = wb.sheet_by_name('Parents')   
@@ -625,7 +590,6 @@ def populateParent(wb):
 
 def populateAdvertiser(wb):            
     sh = wb.sheet_by_name('ParentInfo_02082013')
-
     for rownum in range(4, 2233): #sh.nrows):
         parent = get_or_create(db.session, Parent, parent = sh.cell(rownum,7).value)
         acc = sh.cell(rownum,8).value
@@ -643,16 +607,13 @@ def populateAdvertiser(wb):
     print("PopulateAdvertiser Finished")            
 
     
-
 def populateRep(wb):  
-    sh = wb.sheet_by_name('RepID')
-     
+    sh = wb.sheet_by_name('RepID')     
     for rownum in range(1, 92):
         repID = sh.cell(rownum,0).value
         last_name = sh.cell(rownum,1).value
         first_name = sh.cell(rownum,2).value
         employeeID = sh.cell(rownum,3).value    
-        
         if isinstance(employeeID, float):
             employeeID = str(int(employeeID))
         date_of_hire = get_date_or_none(sh.cell(rownum,4).value)    
@@ -675,7 +636,6 @@ def populateRep(wb):
 
 def populateCampaignRevenue(wb):         
     sh = wb.sheet_by_name('Rev020113')
-    
     for rownum in range(5,5092): #sh.nrows):
         campaign = sh.cell(rownum,13).value
         date_created = date(2013, 2, 6)
@@ -784,13 +744,11 @@ def populateCampaignRevenue(wb):
                 aa = Actualchange(campaign=c, change_date = date_created, date=pyDate, actualRev = rev)                    
                 db.session.add(aa)
                 db.session.commit()
-        
     print("PopulateRevenue Finished") 
     
     
 def populateCampaignRevenue09(wb):         
     sh = wb.sheet_by_name('Rev09')
-     
     for rownum in range(4,264): #sh.nrows):
         date_created = D.now()
         product = get_or_create(db.session, Product, product = sh.cell(rownum,0).value)
@@ -835,9 +793,7 @@ def populateCampaignRevenue09(wb):
             cc = Campaignchange(campaign = c, change_date = D.now(), start_date = py_start, end_date = py_end, revised_deal = revised_deal)
             db.session.add(cc)
             db.session.commit()
-
-        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
-            
+        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()     
         for colnum in range(20,32):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
@@ -858,7 +814,6 @@ def populateCampaignRevenue09(wb):
 
 def populateCampaignRevenue10(wb):         
     sh = wb.sheet_by_name('Rev10')
-     
     for rownum in range(3,881): #sh.nrows):
         date_created = D.now()
         t = sh.cell(rownum,2).value
@@ -868,7 +823,6 @@ def populateCampaignRevenue10(wb):
         agency = sh.cell(rownum,16).value
         advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,20).value)
         campaign = sh.cell(rownum,21).value
-               
         industry = sh.cell(rownum,15).value
         if(industry == '(blank)'):
             industry = None
@@ -904,9 +858,7 @@ def populateCampaignRevenue10(wb):
             cc = Campaignchange(campaign = c, change_date = D.now(), start_date = py_start, end_date = py_end, revised_deal = revised_deal)
             db.session.add(cc)
             db.session.commit()
-
         #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
-            
         for colnum in range(37,49):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
@@ -922,14 +874,11 @@ def populateCampaignRevenue10(wb):
                 aa = Actualchange(campaign=c, change_date = D.now(), date=pyDate, actualRev = rev)
                 db.session.add(aa)
                 db.session.commit()
-                
     print("PopulateCampaignRevenue10 Finished") 
 
 
 def cleanDB():
-#    db.engine.execute(association_table.delete())
     s = db.session
-#    s.query(Sfdc).delete()    
     s.query(Booked).delete()
     s.query(Actual).delete()
     s.query(Campaign).delete()    
@@ -959,7 +908,7 @@ print(json.dumps(list(res), indent=2))
 
 #DropDB()
 db.create_all()   
-wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData02062013.xls')
+wb = xlrd.open_workbook('SalesMetricData02062013.xls')
 #populateChannel(wb)
 #populateProduct(wb)
 #populateParent(wb)

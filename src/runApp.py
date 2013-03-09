@@ -2,7 +2,9 @@ from models import *
 from db_utils import *
 from flask import Response
 
-import flask.ext.restless
+#import flask.ext.restless
+import flask_restless
+
 import datetime
 import sqlalchemy as a
 import string
@@ -10,7 +12,8 @@ import string
 # Create the Flask-Restless API manager.
 
 db.create_all()
-manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
+#manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
+manager = flask_restless.APIManager(app, flask_sqlalchemy_db=db)    
     
 # Create API endpoints, which will be available at /api/<tablename> by
 # default. Allowed HTTP methods can be specified as well.

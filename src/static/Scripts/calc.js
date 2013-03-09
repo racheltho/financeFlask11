@@ -63,6 +63,9 @@ var active_days = function(st_date, end_date) {
 };
 
 var calc_sl = function(st_date, end_date, booked_rev, budget) {
+	// booked_rev is array of objects
+	// curr_booked is array of objects
+	// months is an array
 	var months = mths(st_date, end_date);
 	var active = active_days(st_date, end_date);
 	var total_days = _.reduce(active, function(memo, num) {
