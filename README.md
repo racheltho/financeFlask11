@@ -3,9 +3,9 @@ Project Summary
 ==============
 >>>>>>> ceef466ee29b016287f16b4fb636f08431ddad4c
 
-<h2> Motivation: <h2> This project was created to replace a large, messy excel spreadsheet that required several people to spend many hours manually entering and analyzing data each week.  Because of the manual nature, as the amount of data increased, errors were inevitably introduced and the process had become unmanageably time-consuming.<h2>
+<h2> Motivation: </h2> This project was created to replace a large, messy excel spreadsheet that required several people to spend many hours manually entering and analyzing data each week.  Because of the manual nature, as the amount of data increased, errors were inevitably introduced and the process had become unmanageably time-consuming.<h2>
 
-<h2> Overview: <h2> I've tried to take advantage of the built in functionality of flaks-restless, sqlalchemy, and angularjs to keep my code as clean and as simple as possible.
+<h2> Overview: </h2> I've tried to take advantage of the built in functionality of flaks-restless, sqlalchemy, and angularjs to keep my code as clean and as simple as possible.
 
 The basic layout is as follows:
 
@@ -49,7 +49,7 @@ When <code> db.createall() </code> is called, tables will be created in the data
 
 
 
-<h2> More challenging/unusual points: <h2>  
+<h2> More challenging/unusual points: </h2>  
 
 Pairing (SFDC) SalesForce and Campaigns:
 ---------------------------------------
