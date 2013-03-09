@@ -21,7 +21,7 @@ db = flask_sqlalchemy.SQLAlchemy(app)
 ```
 
 Below is a sample of one of my classes.  Notice that there are foreign keys joining to the channel and product tables, and a self-join back to the rep table (for the manager).
-```python
+<pre><code>```python
 class Rep(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     repID = db.Column(db.Unicode, unique=True)
@@ -44,7 +44,7 @@ class Rep(db.Model):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 ```
-
+</code></pre>
 When ``` db.createall() ``` is called, tables will be created in the database for all new classes.
 
 
