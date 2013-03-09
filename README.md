@@ -51,8 +51,7 @@ When <code> db.createall() </code> is called, tables will be created in the data
 
 <h2> More challenging/unusual points: </h2>  
 
-Pairing (SFDC) SalesForce and Campaigns:
----------------------------------------
+<h3>Pairing (SFDC) SalesForce and Campaigns:</h3>
 When a record shows up in SalesForce, it may be a new campaign, or it may be a modification of a campaign that already exists.  I wanted to display a list of newly entered SalesForce records, and if the campaign already existed, to display it directly after the corresponding SalesForce record so that the user could compare how the fields were different.  If the campaign did not exist yet, I wanted to give the user the option to create it using the SalesForce data.
 
 In order to do this, I needed ng-repeat to loop through an outerjoin of SFDC (salesforce) and campaign records.  I put my ng-repeat directive in <tbody> instead of my usual location within <tr>.  I also used the directive ng-show inside of <tr> to only show the campaign if it existed, and to show different buttons for cases for the SFDC record where a corresponding campaign existed (edit or approve) and where it didn't (create).
@@ -125,7 +124,7 @@ sfdc_campaign_join = sfdc_table.outerjoin(campaign_table, sfdc_table.c.oid == ca
 
 When the campaign does not already exist, and the user hits create, the user will be directed to the usual campaign creation form, only with some fields already populated with the relevant info from the SalesForce record.  This is does within app.js, within the CreateCtrl controller.
 
-<code>
+<pre><code>
 var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
@@ -143,4 +142,4 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 		});
 	}
 };
-</code>
+</code></pre>
