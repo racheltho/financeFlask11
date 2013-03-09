@@ -13,15 +13,15 @@ models.py:
 =========
 Here is the code to create the Flask application and the Flask-SQLAlchemy object.  This creates the connection with the database, automates the creation of tables corresponding to the classes I define next, and allows for the creation of sessions in which records are added to the tables.
 
-<code>
+'''
 app = flask.Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres@localhost/mydatabase11'
 db = flask_sqlalchemy.SQLAlchemy(app)
-</code>
+'''
 
 Below is a sample of one of my classes.  Notice that there are foreign keys joining to the channel and product tables, and a self-join back to the rep table (for the manager).
-<code>
+'''
 class Rep(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     repID = db.Column(db.Unicode, unique=True)
@@ -43,7 +43,7 @@ class Rep(db.Model):
         return u"%s, %s" % (self.last_name, self.first_name)
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-</code>
+'''
 
 When <code> db.createall() </code> is called, tables will be created in the database for all new classes.
 
