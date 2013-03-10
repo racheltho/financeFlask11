@@ -18,6 +18,7 @@ FinanceDB uses [PostgreSQL] (http://www.postgresql.org/) for the database and ha
 microframework [Flask] (http://flask.pocoo.org/)). [AngularJS] (http://angularjs.org/) is used for the frontend and 
 [Bootstrap] (http://twitter.github.com/bootstrap/) is used for the styling.  FinanceDB uses [SQLAlchemy] (http://www.sqlalchemy.org/) for the ORM
 and [Flask-Restless] (https://flask-restless.readthedocs.org/en/latest/) to create API endpoints around the SQLAlchemy objects.
+[Select2] (http://ivaynberg.github.com/select2/) is used for the drop-down menus.
 
 ##Outline:
 
@@ -136,7 +137,7 @@ clients for the flask-restless endpoints, and the controllers.  Angular provides
 concise way.
 
 Below is the definition of CampaignApp as an angular module and a routing table linking up addresses, 
-controllers, and html pages.  The angular directive [$routeProvider] (http://docs.angularjs.org/api/ng.$routeProvider)
+controllers, and html templates.  The angular directive [$routeProvider] (http://docs.angularjs.org/api/ng.$routeProvider)
 is used for this.
 
 ```javascript
@@ -294,21 +295,65 @@ test("active_days test", function() {
 ```
 
 ###index.html
+Index.html is the main html page, within which the html templates are rendered.
+
+Index.html can be found at http://127.0.0.1:5000/static/index.html, and the other pages are called from urls in the format
+http://127.0.0.1:5000/static/index.html#/templatename (for instance, http://127.0.0.1:5000/static/index.html#/campaigns).
+
+The angular directive [ng-app] (http://docs.angularjs.org/api/ng.directive:ngApp) is included in the html tag.  Note
+that CampaignApp was defined as an angular module at the beginning of the app.js file (described above).
 
 ```html
 <!DOCTYPE html>
 <html ng-app="CampaignApp" xmlns="http://www.w3.org/1999/xhtml">
 ```
 
+The head has many script and link tags to load the needed javascript and css files.  Here is a sampling:
 ```html
-<div class="container">
-			<div ng-view></div>
-		</div>
-	</body>
+<script src="Scripts/jquery-1.7.1.js"></script>
+<script src="Scripts/jquery-ui-1.8.20.js"></script>
+<script src="Scripts/bootstrap.js"></script>
+<script src="Scripts/angular.js"></script>
+<script src="Scripts/angular-resource.js"></script>
+<script src="Scripts/angular-ui.js"></script>
+...
+<link rel="stylesheet" type="text/css" href="Content/bootstrap.css"></link>
+<link rel="stylesheet" type="text/css" href="Content/themes/base/jquery-ui.css"></link>
+<link rel="stylesheet" type="text/css" href="Content/themes/select2.css"></link>
 ```
 
+Within the body, there is a container containing the angular directive [ng-view] (http://docs.angularjs.org/api/ng.directive:ngView).
+It is from here that the rendered template of the current route is included.
 
-###other html templates
+```html
+<div class="container">
+	<div ng-view></div>
+</div>
+```
+
+###html templates
+There are currently 11 html template files for the various pages, and they are fairly straight-forward.
+An example code segment (from replist.html) is:
+```html
+<table class="table table-striped table-condensed table-hover">
+...
+<tr ng-repeat="rep in reps" id="item_{{rep.id}}">
+	<td>{{rep.repID}}</td>
+        <td>{{rep.last_name}}</td>
+        <td>{{rep.first_name}}</td>
+        <td>{{rep.employeeID}}</td>
+        <td>{{rep.date_of_hire | date}}</td>
+        <td>{{rep.type}}</td>
+        <td>{{rep.channel.channel}}</td>
+        <td>{{rep.product.product}}</td>
+        <td>{{rep.manager.repID}}</td>
+	<td> <a href="#/editrep/{{rep.id}}"><icon name="pencil" /></a></td>
+</tr>
+```
+Double curly braces are used for rendering $scope variables.  So rep.last_name appears as $scope.rep.last_name in 
+the repListCtrl javascript controller.  The angular directive [ng-repeat] (http://docs.angularjs.org/api/ng.directive:ngRepeat)
+is used to loop through the rep objects in reps, where reps has been defined by setting $scope.reps within the success
+function of a Rep.get function call within app.js.
 
 
 ###SQL views
