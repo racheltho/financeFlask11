@@ -106,14 +106,14 @@ Endpoints for each class are created as follows (below is the example for the Re
 manager.create_api(Rep, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=200)
 ```
 
-And to run the app:
+The command to run the app:
 
 ```python
 app.run()
 ```
 
-However, there are several cases where something other than the standard Class-based API is needed, for instance to
-deal with business logic.  In order, to create API endpoints using SELECT statements or VIEWs from SQL:
+However, there are several cases where something other than the standard Class-based API is needed to
+deal with business logic.  In these cases @app.route is used to create API endpoints using SELECT statements and VIEWs from SQL:
 
 ```python
 @app.route('/api/bookedchange<int:campaignid>')
@@ -170,6 +170,85 @@ $.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 
 	});
 ```
 
+Here are some examples of how the standard javascript clients are called from within the controllers:
+
+```javascript
+Rep.save($scope.item, function() { $location.path('/replist'); });
+```
+
+```javascript
+Rep.update({ id: $scope.item.id }, $scope.item, function() { $location.path('/replist'); });
+```
+
+Calls to our custom defined endpoints (the ones defined by @app.route in the python file) are done using [$http] (http://docs.angularjs.org/api/ng.$http)
+```javascript
+$http.get('/api/historicalbyq').success(function(data) {
+ 		$scope.hbyq_chart = data.res;
+ 		$scope.hbyq_keys = $scope.hbyq_chart[0].slice(1);
+ 		$scope.hbyq_data = $scope.hbyq_chart.slice(1);
+ 	});
+```
+
+[$scope] (http://docs.angularjs.org/guide/scope) is an incredibly useful object that creates a two-way binding between 
+the js controller and its corresponding html template.
+
+Some of the Angular [services] (http://docs.angularjs.org/guide/dev_guide.services) which were most useful in this
+project are
+
++	[$location] (http://docs.angularjs.org/api/ng.$location): used to redirect the browser location
+
++	[$routeParams] (http://docs.angularjs.org/api/ng.$routeParams): used to extract parameters from the route (typically used when
+the id appears as part of the url name, such as in '/edit/:campaignId')
+
++	[$injector] (http://docs.angularjs.org/api/AUTO.$injector): used in this code to create a controller that is an extension of 
+another controller (and thus inherits all its functions)
+
+Controllers are declared as functions taking as their arguments the Angular services that they use (e.g. $scope,
+$routeParams, $http), as well as the javascript object clinets that they use:
+
+```javascript
+var CampHistoryCtrl = function($scope, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Actualchange){
+	...
+}
+```
+
+This segment of code from EditCtrl, the controller for editing existing campaigns, uses get, update, and save to check if a record for changes to
+booked revenue exists, and to create or update it depending on the result.  When get is used with arguments other than the
+primary id, a special filter must be created.
+
+```javascript
+var q = order_by("change_date", "asc");
+q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
+Bookedchange.get({q: angular.toJson(q)}, function (item) {
+	var mybc = item.objects[0];
+	if(mybc){
+    		Bookedchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	}else{
+	    	Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	}
+```
+
+And here is an example of one of the controllers:
+
+```javascript
+var EditRepCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, $injector) { 
+	$injector.invoke(RepDetailsBaseCtrl, this, {$scope: $scope});
+	var self = this;
+	$scope.btn_text = 'Update';
+	Rep.get({ id: $routeParams.repId }, function (item) {
+		self.original = item;
+		$scope.item = new Rep(item);
+	});
+	$scope.isClean = function () {
+		return angular.equals(self.original, $scope.item);
+	};
+	$scope.save = function () {
+		Rep.update({ id: $scope.item.id }, $scope.item, function() { $location.path('/replist'); });
+	}; 
+};
+```
+
+
 ###calc.js###
 
 ###test.js###
@@ -181,10 +260,12 @@ $.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 
 
 When a record shows up in SalesForce, it may be a new campaign, or it may be a modification of a campaign that already exists.  I wanted to display a list of newly entered SalesForce records, and if the campaign already existed, to display it directly after the corresponding SalesForce record so that the user could compare how the fields were different.  If the campaign did not exist yet, I wanted to give the user the option to create it using the SalesForce data.
 
-In order to do this, I needed ng-repeat to loop through an outerjoin of SFDC (salesforce) and campaign records.  I put my ng-repeat directive in <tbody> instead of my usual location within <tr>.  I also used the directive ng-show inside of <tr> to only show the campaign if it existed, and to show different buttons for cases for the SFDC record where a corresponding campaign existed (edit or approve) and where it didn't (create).
+In order to do this, ng-repeat is used to loop through an outerjoin of SFDC (salesforce) and campaign records.  
+The ng-repeat directive appears in <tbody> instead of the usual location within <tr>. The directive ng-show is used 
+inside of <tr> to only show the campaign if it existed, and to show different actions buttons for the SFDC record 
+for cases where a corresponding campaign existed (edit or approve) and where it didn't (create).
 
-
-Here is my html code:
+Here is the html code:
 
 ```html
 <h2>Approve new and revised IOs</h2>
