@@ -350,10 +350,24 @@ An example code segment (from replist.html) is:
 	<td> <a href="#/editrep/{{rep.id}}"><icon name="pencil" /></a></td>
 </tr>
 ```
-Double curly braces are used for rendering $scope variables.  So rep.last_name appears as $scope.rep.last_name in 
-the repListCtrl javascript controller.  The angular directive [ng-repeat] (http://docs.angularjs.org/api/ng.directive:ngRepeat)
+
+The angular directive [ng-repeat] (http://docs.angularjs.org/api/ng.directive:ngRepeat)
 is used to loop through the rep objects in reps, where reps has been defined by setting $scope.reps within the success
 function of a Rep.get function call within app.js.
+
+Double curly braces are used for rendering $scope variables.  So rep.last_name appears as $scope.rep.last_name in 
+the repListCtrl javascript controller.
+
+The directives [ng-click] (http://docs.angularjs.org/api/ng.directive:ngClick), [ng-disabled] (http://docs.angularjs.org/api/ng.directive:ngDisabled),
+and [ng-show] (http://docs.angularjs.org/api/ng.directive:ngShow) are also frequently used in the templates in this 
+project.  Here is a snippet of code from detail.html illustrating their use:
+```html
+<div class="form-actions">
+	<button ng-click="save()" ng-disabled="detailForm.$invalid" class="btn btn-primary"> {{btn_text}} </button>
+        <a href="#/history/{{item.id}}"><button ng-show="history" class="btn"> View History</button></a>
+        <button ng-click="cancel()" class="btn">Cancel</button>
+</div>
+```
 
 
 ###SQL views
