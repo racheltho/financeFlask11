@@ -15,7 +15,7 @@ were inevitably introduced and the process had become unmanageably time-consumin
 ##Platform:
 
 FinanceDB uses [PostgreSQL] (http://www.postgresql.org/) for the database and has a Python backend (using the
-microframework [Flask] (http://flask.pocoo.org/) ). [AngularJS] (http://angularjs.org/) is used for the frontend and 
+microframework [Flask] (http://flask.pocoo.org/)). [AngularJS] (http://angularjs.org/) is used for the frontend and 
 [Bootstrap] (http://twitter.github.com/bootstrap/) is used for the styling.  FinanceDB uses [SQLAlchemy] (http://www.sqlalchemy.org/) for the ORM
 and [Flask-Restless] (https://flask-restless.readthedocs.org/en/latest/) to create API endpoints around the SQLAlchemy objects.
 
@@ -136,7 +136,8 @@ clients for the flask-restless endpoints, and the controllers.  Angular provides
 concise way.
 
 Below is the definition of CampaignApp as an angular module and a routing table linking up addresses, 
-controllers, and html pages.  The angular directive $routeProvider is used for this.
+controllers, and html pages.  The angular directive [$routeProvider] (http://docs.angularjs.org/api/ng.$routeProvider)
+is used for this.
 
 ```javascript
 var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
@@ -228,33 +229,141 @@ Bookedchange.get({q: angular.toJson(q)}, function (item) {
 	}
 ```
 
-And here is an example of one of the controllers:
+
+###calc.js###
+The calc.js file contains many functions used in the business logic for the booked revenue part of the campaign page.
+The months that the campaign is running are calculated from the start and end dates, and revenue can be divided evenly
+across the total number of days (and is stored and displayed by month).  The appropriate instances of the Booked class
+are created and retrieved.  Some functions from the javascript utility belt [underscore.js] (http://underscorejs.org/)
+are used.  Below is an example of one function in calc.js.
 
 ```javascript
-var EditRepCtrl = function ($scope, $location, $routeParams, Campaign, Rep, Advertiser, Product, Channel, $injector) { 
-	$injector.invoke(RepDetailsBaseCtrl, this, {$scope: $scope});
-	var self = this;
-	$scope.btn_text = 'Update';
-	Rep.get({ id: $routeParams.repId }, function (item) {
-		self.original = item;
-		$scope.item = new Rep(item);
+var calc_sl = function(st_date, end_date, booked_rev, budget) {
+	// booked_rev is array of objects
+	// curr_booked is array of objects
+	// months is an array
+	var months = mths(st_date, end_date);
+	var active = active_days(st_date, end_date);
+	var total_days = _.reduce(active, function(memo, num) {
+		return memo + num;
+	}, 0);
+	var curr_booked = calc_booked_rev(st_date, end_date, booked_rev);
+	var dict = {};
+	var answer = [];
+	// convert curr_booked into dictionary dict
+	_.each(curr_booked, function(o) {
+		dict[o.date] = o.bookedRev;
 	});
-	$scope.isClean = function () {
-		return angular.equals(self.original, $scope.item);
-	};
-	$scope.save = function () {
-		Rep.update({ id: $scope.item.id }, $scope.item, function() { $location.path('/replist'); });
-	}; 
+	// use months to update the appropriate fields of dict
+	$.each(months, function(i, o) {
+		dict[o] = Math.round(active[o] * budget / total_days * 100) / 100;
+	});
+	// convert dict back into an array of objects to be returned
+	$.each(dict, function(index, value) {
+		answer.push({
+			date : new Date(index),
+			bookedRev : value
+		});
+	});
+	answer.sort(function(c, d) {
+		var a = c.date;
+		var b = d.date;
+		return a < b ? -1 : (a > b ? 1 : 0);
+	});
+	return answer;
 };
 ```
 
-
-###calc.js###
-
 ###test.js###
+The testing framework [qunit.js] (http://qunitjs.com/) was used for unit testing of the business logic functions.  Here is
+a test function call of the function active_days:
+
+```javascript
+test("active_days test", function() {
+	var campStDate = new Date('01-10-2012');
+	var campEndDate = new Date('04-05-2012');
+	var expdt = [new Date("01-01-2012"), new Date("02-01-2012"), new Date("03-01-2012"), new Date("04-01-2012")];
+	var expdays = [22, 28, 31, 5];
+	var exp = {};
+	_.each(expdt, function(o, i) {
+		exp[o] = expdays[i];
+	});
+	var active = active_days(campStDate, campEndDate);
+	deepEqual(active, exp, "Passed");
+});
+```
+
+###index.html
+
+```html
+<!DOCTYPE html>
+<html ng-app="CampaignApp" xmlns="http://www.w3.org/1999/xhtml">
+```
+
+```html
+<div class="container">
+			<div ng-view></div>
+		</div>
+	</body>
+```
 
 
-##Points of interest:
+###other html templates
+
+
+###SQL views
+Several views were created to select, join, and form data from the datbase with particular business logic.  Below is
+the view that sums revenue by sales channel and quarter.  This is displayed in a table on the historical dashboard
+page.
+
+```sql
+CREATE OR REPLACE VIEW HistoricalbyQ AS
+SELECT channel, cast (date_part('year', B.date) || ' ' || 'Q' || date_part('quarter', B.date) AS Varchar) AS Q,  sum("actualRev") AS Actual
+  FROM actual B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  GROUP BY channel, Q
+  ORDER BY 1,2;
+```
+
+This view selects campaigns for which booked revenue was changed in the last week.  These are displayed in the week over week
+changes dashboard.
+
+```sql
+CREATE OR REPLACE VIEW BookedChanges AS
+SELECT cast(A.campaign || '|' || BB.change_date || '|' || DD.change_date AS varchar) AS Campaign, BB.date, cast(BB."bookedRev" || '|' || DD."bookedRev" AS Varchar) AS Booked --, BB."bookedRev" - DD."bookedRev" AS Difference
+FROM
+(SELECT B.* 
+FROM bookedchange B
+JOIN
+(SELECT MAX(change_date) AS max_date, campaign_id, date
+  FROM bookedchange
+  WHERE change_date <= current_date - integer '7'
+  GROUP BY campaign_id, date) AS C
+ON B.change_date = C.max_date 
+  AND B.campaign_id = C.campaign_id
+  AND B.date = C.date) AS BB
+JOIN
+(SELECT D.*
+FROM bookedchange D
+JOIN
+(SELECT MAX(change_date) AS max_date, campaign_id, date
+  FROM bookedchange
+  WHERE change_date > current_date - integer '7'
+  GROUP BY campaign_id, date) AS E
+ON D.change_date = E.max_date 
+  AND D.campaign_id = E.campaign_id
+  AND D.date = E.date) AS DD
+ON BB.campaign_id = DD.campaign_id
+  AND BB.date = DD.date
+JOIN campaign A
+ON A.id = BB.campaign_id
+ORDER BY BB.campaign_id, BB.date
+```
+
+##Other points of interest:
 
 ###Pairing (SFDC) SalesForce and Campaigns:
 
