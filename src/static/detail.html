@@ -13,8 +13,14 @@
     </div>
         <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
         <label class="control-label" for="advertiser">Advertiser</label>
-        <div class="controls">
+        <div class="controls" ng-show="!ad_sfdc">
 			<input ui-select2="select_advertisers" ng-model="item.advertiser" data-placeholder="-- Select One --" />
+        </div>
+        <div class="controls" ng-show="ad_sfdc">
+			<select ui-select2 ng-model="item.advertiser_id" id="advertiser" data-placeholder="-- Select One --">
+            	<option></option>
+    			<option ng-repeat="a in select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option>
+  			</select>		
         </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">

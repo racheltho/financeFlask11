@@ -229,6 +229,7 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 		};
 	};
 	
+	
 	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
 		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
 	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
@@ -269,6 +270,7 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
     
 	if ($scope.sfdcid) {
 		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
+			console.log(data);
 			$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id',
 				'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
 				function(i,o) {	if(data[o]) {$scope.item[o] = data[o];}	});
@@ -276,6 +278,13 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 				$scope.item.rep = data.rep;
 			}
 	        $scope.update_campaign_calcs();
+		});
+		Sfdccampaign.get({id: $scope.sfdcid}, function(item){
+			$http.get('/api/sfdc_adver/' + item.advertiser).success(function(data2){
+					$scope.select_advertisers_sfdc = data2.res;
+					$scope.ad_sfdc = $scope.select_advertisers_sfdc.length;
+					console.log($scope.ad_sfdc);
+			});
 		});
 	}
 };

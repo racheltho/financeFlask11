@@ -59,10 +59,13 @@ def get_date_or_none(entry):
 
 
 def int_or_none(entry):
-    if isinstance(entry, float) or isinstance(entry, str):
-        return int(entry)
-    else:
+    if entry == '':
         return None
+    else:
+        if isinstance(entry, float) or isinstance(entry, str):
+            return int(entry)
+        else:
+            return None
     
 def str_or_none(entry):
     if entry == '':
@@ -644,8 +647,13 @@ def populateCampaignRevenue(wb):
         chan = sh.cell(rownum,5).value
         if(chan == "MSLAL"):
             chan = "Publisher"
-        channel = get_or_create(db.session, Channel, channel = chan)        
-        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
+        channel = get_or_create(db.session, Channel, channel = chan)
+        try:
+            advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,6).value).first()
+            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
+        except:
+            advertiser = None
+            print(sh.cell(rownum,6).value + " not found")
         industry = sh.cell(rownum,8).value
         agency = sh.cell(rownum,9).value
         sfdc_oid = sh.cell(rownum,10).value
@@ -705,7 +713,6 @@ def populateCampaignRevenue(wb):
                 c = Campaign(campaign = campaign, date_created = date_created, type = t, product = product, channel = channel, advertiser = advertiser, 
                              industry = industry, agency = agency, sfdc_oid = sfdc_oid, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, cpm_price = cpm_price, 
                              contracted_impr = contracted_impr, contracted_deal = contracted_deal, revised_deal =revised_deal)    
-                print(campaign)
                 db.session.add(c)
                 db.session.commit()
                 cc = Campaignchange(campaign = c, change_date = date_created, start_date = py_start, end_date = py_end, cpm_price = cpm_price, revised_deal = revised_deal)
@@ -752,7 +759,12 @@ def populateCampaignRevenue09(wb):
     for rownum in range(4,264): #sh.nrows):
         date_created = D.now()
         product = get_or_create(db.session, Product, product = sh.cell(rownum,0).value)
-        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,2).value)
+        try:
+            advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,2).value).first()
+            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
+        except:
+            advertiser = None
+            print(sh.cell(rownum,2).value + " not found")
         agency = sh.cell(rownum,3).value
         campaign = sh.cell(rownum,4).value
         t = sh.cell(rownum,5).value
@@ -821,7 +833,12 @@ def populateCampaignRevenue10(wb):
         cp = sh.cell(rownum,4).value
         channel = get_or_create(db.session, Channel, channel = sh.cell(rownum,5).value)
         agency = sh.cell(rownum,16).value
-        advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,20).value)
+        try:
+            advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,20).value).first()
+            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
+        except:
+            advertiser = None
+            print(sh.cell(rownum,6).value + " not found")
         campaign = sh.cell(rownum,21).value
         industry = sh.cell(rownum,15).value
         if(industry == '(blank)'):

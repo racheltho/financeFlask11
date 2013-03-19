@@ -137,6 +137,14 @@ def get_thisrev():
     res = pivot_1(data)
     return json_obj(res)
 
+@app.route('/api/sfdc_adver/<string:sfdc_advertiser>')
+def get_sfdc_adver(sfdc_advertiser):
+    data = get_sql('SELECT A.id, A.advertiser FROM advertiser A WHERE similarity(A.advertiser, \'' + sfdc_advertiser + '\') > .3 ORDER by similarity(A.advertiser, \'' + sfdc_advertiser + '\') DESC LIMIT 3')
+#    data = get_sql('SELECT * FROM advertiser A WHERE similarity(A.advertiser, \'nintend\') > .4 ORDER by similarity(A.advertiser, \'nintend\') DESC LIMIT 3')
+    return json_dict(data)
+
+
+"""
 @app.route('/api/thismonth')
 def get_thismonth():
     data = get_sql('SELECT * FROM This_month')
@@ -154,8 +162,6 @@ def get_thisyear():
 
 
 
-
-"""
 data = get_sql('SELECT * FROM HistoricalCPM')
 res = pivot_1(data)
 print json.dumps(list(res), indent=2)
