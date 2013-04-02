@@ -20,7 +20,7 @@ test("mths null test", function(){
 	deepEqual(mths(new Date('06-12-1983'), null),[]);
 });
 
-test("calc_booked_rev test", function() {
+test("calc_rev test (booked)", function() {
 	var campStDate = new Date('01-15-2012');
 	var campEndDate = new Date('04-15-2012');
 	var currBooked = [{
@@ -30,7 +30,7 @@ test("calc_booked_rev test", function() {
 		date : new Date('02-01-2012'),
 		bookedRev : 42
 	}];
-	var actStart = calc_booked_rev(campStDate, campEndDate, currBooked);
+	var actStart = calc_rev(campStDate, campEndDate, currBooked, "bookedRev");
 	var exp = [{
 		date : new Date('01-01-2012'),
 		bookedRev : 432
@@ -47,11 +47,38 @@ test("calc_booked_rev test", function() {
 	deepEqual(actStart, exp, "Passed");
 });
 
-test("calc_booked_rev with empty currBooked test", function() {
+test("calc_rev test (actual)", function() {
+	var campStDate = new Date('01-15-2012');
+	var campEndDate = new Date('04-15-2012');
+	var currActual = [{
+		date : new Date('01-01-2012'),
+		actualRev : 432
+	}, {
+		date : new Date('02-01-2012'),
+		actualRev : 42
+	}];
+	var actStart = calc_rev(campStDate, campEndDate, currActual, "actualRev");
+	var exp = [{
+		date : new Date('01-01-2012'),
+		actualRev : 432
+	}, {
+		date : new Date('02-01-2012'),
+		actualRev : 42
+	}, {
+		date : new Date('03-01-2012'),
+		actualRev : 0
+	}, {
+		date : new Date('04-01-2012'),
+		actualRev : 0
+	}];
+	deepEqual(actStart, exp, "Passed");
+});
+
+test("calc_rev with empty currBooked test", function() {
 	var campStDate = new Date('01-15-2012');
 	var campEndDate = new Date('04-15-2012');
 	var currBooked = [];
-	var actStart = calc_booked_rev(campStDate, campEndDate, currBooked);
+	var actStart = calc_rev(campStDate, campEndDate, currBooked, "bookedRev");
 	var exp = [{
 		date : new Date('01-01-2012'),
 		bookedRev : 0
@@ -105,7 +132,7 @@ test("calc_sl test", function() {
 		bookedRev : 42
 	}];
 	var budget = 25000;
-	var act_sl = calc_sl(campStDate, campEndDate, currBooked, budget);
+	var act_sl = calc_sl(campStDate, campEndDate, currBooked, "bookedRev", budget);
 	// NB: Calcs come from ...xls
 	var exp = [{
 		date : new Date('01-01-2012'),
@@ -133,7 +160,7 @@ test("calc_booked test 2", function() {
 		date : new Date('02-01-2011'),
 		bookedRev : 42
 	}];
-	var act = calc_booked_rev(campStDate, campEndDate, currBooked);
+	var act = calc_rev(campStDate, campEndDate, currBooked, "bookedRev");
 	var exp = [{
 		date : new Date('01-01-2011'),
 		bookedRev : 4320
@@ -158,7 +185,7 @@ test("calc_sl test 2", function() {
 		bookedRev : 42
 	}];
 	var budget = 2200;
-	var act_sl = calc_sl(campStDate, campEndDate, currBooked, budget);
+	var act_sl = calc_sl(campStDate, campEndDate, currBooked, "bookedRev", budget);
 	// NB: Calcs come from ...xls
 	var exp = [{
 		date : new Date('01-01-2011'),

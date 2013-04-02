@@ -17,7 +17,7 @@ from datetime import datetime as D
 from xldate import xldate_as_tuple
 
 from flask import jsonify
-from itertools import groupby, islice
+from itertools import groupby, islice, chain
 from operator import itemgetter
 from collections import defaultdict
 
@@ -638,10 +638,11 @@ def populateRep(wb):
 
 
 def populateCampaignRevenue(wb):         
-    sh = wb.sheet_by_name('Rev020113')
-    for rownum in range(5,5092): #sh.nrows):
+    sh = wb.sheet_by_name('Rev032813_574')
+    for rownum in range(2,5890): #sh.nrows):
         campaign = sh.cell(rownum,13).value
-        date_created = date(2013, 2, 6)
+        print(campaign)
+        date_created = date(2013, 3, 28)
         t = sh.cell(rownum,3).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
         chan = sh.cell(rownum,5).value
@@ -720,10 +721,10 @@ def populateCampaignRevenue(wb):
                 db.session.commit()
 
             #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
-        for colnum in range(26,62):
+        for colnum in chain(xrange(26,38), xrange(56,68), xrange(88,100)):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
-                mydate = xldate_as_tuple(sh.cell(4,colnum).value,0)[0:3]
+                mydate = xldate_as_tuple(sh.cell(1,colnum).value,0)[0:3]
                 pyDate = date(*mydate)
                 book_instance = db.session.query(Booked).filter_by(campaign=c, date=pyDate).first()
                 if book_instance:
@@ -736,10 +737,10 @@ def populateCampaignRevenue(wb):
                 db.session.add(aa)
                 db.session.commit()
             
-        for colnum in range(62,98):
+        for colnum in chain(xrange(41,53), xrange(73,85), xrange(103,115)):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
-                mydate = xldate_as_tuple(sh.cell(4,colnum).value,0)[0:3]
+                mydate = xldate_as_tuple(sh.cell(1,colnum).value,0)[0:3]
                 pyDate = date(*mydate)
                 actual_instance = db.session.query(Actual).filter_by(campaign=c, date=pyDate).first()
                 if actual_instance:
@@ -748,6 +749,12 @@ def populateCampaignRevenue(wb):
                 else:    
                     a = Actual(campaign=c, date_created = date_created, date=pyDate, actualRev=rev)
                     db.session.add(a)
+                    # For CPM, we need to add 
+                    if cp == "CPM" and pyDate.year == 2013:
+                        b = Booked(campaign=c, date_created = date_created, date=pyDate, bookedRev=rev)
+                        db.session.add(b)
+                        bb = Bookedchange(campaign=c, change_date = date_created, date=pyDate, bookedRev = rev)
+                        db.session.add(bb)
                 aa = Actualchange(campaign=c, change_date = date_created, date=pyDate, actualRev = rev)                    
                 db.session.add(aa)
                 db.session.commit()
@@ -925,7 +932,7 @@ print(json.dumps(list(res), indent=2))
 
 #DropDB()
 db.create_all()   
-wb = xlrd.open_workbook('SalesMetricData02062013.xls')
+wb = xlrd.open_workbook('SalesMetricData03212013.xls')
 #populateChannel(wb)
 #populateProduct(wb)
 #populateParent(wb)

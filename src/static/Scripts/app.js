@@ -191,7 +191,8 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	};
 	
 	$scope.calculate = function() {
-		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.table_bookeds, $scope.calc_deal);
+		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.item.bookeds, "bookedRev", $scope.calc_deal);
+		$scope.item.actuals = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.actuals, "actualRev");
 	};
 	
 	$scope.update_campaign_calcs = function() {
@@ -199,10 +200,15 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
         $scope.calc_end = parseDate($scope.item.end_date);
         $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
         $scope.item.bookeds = $scope.item.bookeds || [];
+        $scope.item.actuals = $scope.item.actuals || [];
 	    $.map($scope.item.bookeds, function(val, i) {
 	    	val.date = parseDate(val.date);
 	    });
-	    $scope.item.bookeds = calc_booked_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds);
+	    $.map($scope.item.actuals, function(val, i) {
+	    	val.date = parseDate(val.date);
+	    });
+	    $scope.item.bookeds = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds, "bookedRev");
+	    $scope.item.actuals = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.actuals, "actualRev");
 	};
 
 	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
@@ -241,7 +247,7 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	$scope.item = {};
 }; 
 
-var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
+var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Campaignchange, Bookedchange, Actualchange, Sfdc, Sfdccampaign, Rep, Advertiser, Product, $injector) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Add';
@@ -262,6 +268,9 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 	    		end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
 	    	$.each($scope.item.bookeds, function(index, value){
 	    		Bookedchange.save({campaign_id: value.campaign_id, change_date: today, date: value.date, bookedRev: value.bookedRev});
+	    	});
+	    	$.each($scope.item.actuals, function(index, value){
+	    		Actualchange.save({campaign_id: value.campaign_id, change_date: today, date: value.date, actualRev: value.actualRev});
 	    	});
 	    	$location.path(path); });
 	    };
@@ -290,7 +299,7 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 };
 CreateCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
-var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchange, Bookedchange, Rep, Advertiser, Product, $injector, Booked) { 
+var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchange, Bookedchange, Actualchange, Rep, Advertiser, Product, $injector, Booked, Actual) { 
 	$injector.invoke(DetailsBaseCtrl, this, {$scope: $scope});
 
     $scope.btn_text = 'Update';
@@ -319,7 +328,22 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 	    				end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
 	    		}
 			});
-    		
+			
+			$.each($scope.item.actuals, function(index, value){
+	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
+	    		var q = order_by("change_date", "asc");
+	    		console.log(today);
+        		q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
+				Actualchange.get({q: angular.toJson(q)}, function (item) {
+					var mybc = item.objects[0];
+					console.log(mybc);
+					if(mybc){
+	    				Actualchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
+	    			}else{
+	    				Actualchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
+	    			}
+	    		});
+	    	});
 	    	$.each($scope.item.bookeds, function(index, value){
 	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
 	    		var q = order_by("change_date", "asc");
@@ -333,6 +357,7 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 	    			}
 	    		});
 	    	});
+			
         	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
         	else {$location.path('/campaigns');} 
         });   

@@ -16,24 +16,25 @@ var mths = function(start, end) {
 	return d;
 };
 
-var calc_booked_rev = function(start, end, booked_rev) {
+var calc_rev = function(start, end, rev, booked_or_actual) {
 	var dict = {};
 	var answer = [];
 	var months = mths(start, end);
+	var temp = {};
 
 	//_.each(booked_rev, function(m){ m.date.setHours(0); m.date.setMinutes(0); m.date.setSeconds(0); m.date.setMilliseconds(0); });
 	//_.each(months, function(m){ m.setHours(0); m.setMinutes(0); m.setSeconds(0); m.setMilliseconds(0); });
 	_.each(months, function(o) {
 		dict[o] = 0;
 	});
-	_.each(booked_rev, function(o) {
-		dict[o.date] = Math.round(o.bookedRev * 100) / 100;
+	_.each(rev, function(o) {
+		dict[o.date] = Math.round(o[booked_or_actual] * 100) / 100;
 	});
 	$.each(dict, function(index, value) {
-		answer.push({
-			date : new Date(index),
-			bookedRev : value
-		});
+		temp = {};
+		temp.date = new Date(index);
+		temp[booked_or_actual] = value;
+		answer.push(temp);
 	});
 	answer.sort(function(c, d) {
 		var a = c.date;
@@ -62,7 +63,7 @@ var active_days = function(st_date, end_date) {
 	return active;
 };
 
-var calc_sl = function(st_date, end_date, booked_rev, budget) {
+var calc_sl = function(st_date, end_date, rev, booked_or_actual, budget) {
 	// booked_rev is array of objects
 	// curr_booked is array of objects
 	// months is an array
@@ -71,23 +72,24 @@ var calc_sl = function(st_date, end_date, booked_rev, budget) {
 	var total_days = _.reduce(active, function(memo, num) {
 		return memo + num;
 	}, 0);
-	var curr_booked = calc_booked_rev(st_date, end_date, booked_rev);
+	var curr_rev = calc_rev(st_date, end_date, rev, booked_or_actual);
 	var dict = {};
 	var answer = [];
 	// convert curr_booked into dictionary dict
-	_.each(curr_booked, function(o) {
-		dict[o.date] = o.bookedRev;
+	_.each(curr_rev, function(o) {
+		dict[o.date] = o[booked_or_actual];
 	});
 	// use months to update the appropriate fields of dict
 	$.each(months, function(i, o) {
 		dict[o] = Math.round(active[o] * budget / total_days * 100) / 100;
 	});
 	// convert dict back into an array of objects to be returned
+	var temp = {};
 	$.each(dict, function(index, value) {
-		answer.push({
-			date : new Date(index),
-			bookedRev : value
-		});
+		temp = {};
+		temp.date = new Date(index);
+		temp[booked_or_actual] = value;
+		answer.push(temp);
 	});
 	answer.sort(function(c, d) {
 		var a = c.date;
