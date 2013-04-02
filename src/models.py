@@ -932,7 +932,7 @@ print(json.dumps(list(res), indent=2))
 
 #DropDB()
 db.create_all()   
-wb = xlrd.open_workbook('SalesMetricData03212013.xls')
+wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData03212013.xls')
 #populateChannel(wb)
 #populateProduct(wb)
 #populateParent(wb)

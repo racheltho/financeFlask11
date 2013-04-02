@@ -11,17 +11,28 @@
             <span ng-show="detailForm.name.$error.required" class="help-inline">Required</span>
         </div>
     </div>
-        <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
+    <div class="control-group" ng-class="{error: detailForm.advertiser.$invalid}">
         <label class="control-label" for="advertiser">Advertiser</label>
         <div class="controls" ng-show="!ad_sfdc">
-			<input ui-select2="select_advertisers" ng-model="item.advertiser" data-placeholder="-- Select One --" />
-        </div>
+			<input ui-select2="select_advertisers" id="advertiser" ng-model="item.advertiser" data-placeholder="-- Select One --" />
+			<button class="btn-small" ng-click="add_advertiser()">Not in list</button>
+		</div>
         <div class="controls" ng-show="ad_sfdc">
 			<select ui-select2 ng-model="item.advertiser_id" id="advertiser" data-placeholder="-- Select One --">
             	<option></option>
     			<option ng-repeat="a in select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option>
   			</select>		
         </div>
+        <div class="control-group" ng-show="add_new">
+        <div class="controls">
+			<input ng-model="new_advertiser" type="text" /><button class="btn-small" ng-click="create_advertiser()">Create new</button>
+        </div>
+        </div>
+        <div class="control-group">
+        <div class="controls rachel_error" ng-show="no_advertiser">
+        	You must enter an advertiser
+        </div>
+        </div>        
     </div>
     <div class="control-group" ng-class="{error: detailForm.rep.$invalid}">
         <label class="control-label" for="rep">Representatives</label>
@@ -149,7 +160,7 @@
 	<div class = "span1">Actual:</div>
 	<div class="span1" ng-repeat="a in item.actuals">
 		<table class="table table-striped table-condensed table-hover">
-		<tr><td> <input class="input-small" ng-model ="a.actualRev" /> </td></tr></tbody>
+		<tr><td> <input class="input-small" ng-model ="a.actualRev" /> </td></tr>
 		</table>
 	</div>
 </div>

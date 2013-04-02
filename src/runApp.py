@@ -170,6 +170,6 @@ print json.dumps(list(res), indent=2)
 print("Ready to run app")
 
 # start the flask loop
-app.run()
+app.run(host='0.0.0.0')
 
 #print get_count()

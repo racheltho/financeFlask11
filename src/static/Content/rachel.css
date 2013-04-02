@@ -85,3 +85,9 @@ color: #178cb7;
 h4.qc-blue{
 	color: #178cb7; 
 }
+
+
+.rachel_error{
+	color: red;
+	/*font-weight: bold;*/
+}

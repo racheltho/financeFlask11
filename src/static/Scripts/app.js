@@ -135,7 +135,6 @@ var WeekOverWeekCtrl = function($scope, $routeParams, $http, Campaign, Campaignc
  		//$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat(o.slice(1));});
 		//console.log($scope.changes_data);
 		//$.each(myslice, function(i,o){ $scope.changes_data[i] = o[0].split('|').concat($.each(o.slice(1), function(i2, o2){ return o2.split('|')}));})
-		debugger;
 	});
 			
 	
@@ -157,6 +156,23 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 		if(_.find(reps, function(o) {return o.id === new_rep.id.toString();})) { return; }
 		$scope.item.rep.push(new_rep);
 		$scope.new_rep = "";
+	};
+
+	$scope.add_advertiser = function() {
+		$scope.add_new = true;		
+	};
+	
+	$scope.create_advertiser = function() {
+		Advertiser.save({advertiser: $scope.new_advertiser}, function(){
+			$scope.no_advertiser = false;
+			$scope.add_new = false;
+			var q = order_by("id", "asc");
+    	    q.filters = [{name: "advertiser", op: "like", val: $scope.new_advertiser}];
+			Advertiser.get({q: angular.toJson(q)}, function (item) {
+				$scope.item.advertiser = item.objects[0];
+				console.log($scope.item.advertiser);
+			});
+		});
 	};
 
 	$scope.delete_rep = function(rep) {
@@ -312,55 +328,60 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
     } );
 
     $scope.save = function () {
-    	$scope.item.advertiser_id = $scope.item.advertiser.id;
-        Campaign.update({ id: $scope.item.id }, $scope.item, function() {
-        	var now = new Date();
-        	var today = $.datepicker.formatDate('yy-mm-dd', now); 
-        	var q = order_by("change_date", "asc");
-        	q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today} ];
-			Campaignchange.get({q: angular.toJson(q)}, function (item) {
-				var mycc = item.objects[0];
-				if(mycc){
-					Campaignchange.update({id: mycc.id, campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
-	    				end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
-				}else{
-					Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
-	    				end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
-	    		}
-			});
-			
-			$.each($scope.item.actuals, function(index, value){
-	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
-	    		var q = order_by("change_date", "asc");
-	    		console.log(today);
-        		q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
-				Actualchange.get({q: angular.toJson(q)}, function (item) {
-					var mybc = item.objects[0];
-					console.log(mybc);
-					if(mybc){
-	    				Actualchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
-	    			}else{
-	    				Actualchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
+    	//console.log($scope.item.advertiser.id);
+    	if($scope.item.advertiser){
+	    	$scope.item.advertiser_id = $scope.item.advertiser.id;
+    	    Campaign.update({ id: $scope.item.id }, $scope.item, function() {
+        		var now = new Date();
+        		var today = $.datepicker.formatDate('yy-mm-dd', now); 
+	        	var q = order_by("change_date", "asc");
+    	    	q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today} ];
+				Campaignchange.get({q: angular.toJson(q)}, function (item) {
+					var mycc = item.objects[0];
+					if(mycc){
+						Campaignchange.update({id: mycc.id, campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    					end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
+					}else{
+						Campaignchange.save({campaign_id: $scope.item.id, change_date : today, start_date: $scope.item.start_date, 
+	    					end_date: $scope.item.end_date, cpm_price: $scope.item.cpm_price, revised_deal: $scope.item.revised_deal});
 	    			}
-	    		});
-	    	});
-	    	$.each($scope.item.bookeds, function(index, value){
-	    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
-	    		var q = order_by("change_date", "asc");
-        		q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
-				Bookedchange.get({q: angular.toJson(q)}, function (item) {
-					var mybc = item.objects[0];
-					if(mybc){
-	    				Bookedchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
-	    			}else{
-	    				Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
-	    			}
-	    		});
-	    	});
+				});
 			
-        	if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
-        	else {$location.path('/campaigns');} 
-        });   
+				$.each($scope.item.actuals, function(index, value){
+		    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
+	    			var q = order_by("change_date", "asc");
+        			q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
+					Actualchange.get({q: angular.toJson(q)}, function (item) {
+						var mybc = item.objects[0];
+						console.log(mybc);
+						if(mybc){
+	    					Actualchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
+	    				}else{
+	    					Actualchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, actualRev: value.actualRev});
+	    				}
+	    			});
+	    		});
+		    	$.each($scope.item.bookeds, function(index, value){
+		    		var date_str = $.datepicker.formatDate('yy-mm-dd', value.date);
+	    			var q = order_by("change_date", "asc");
+        			q.filters = [{name: "campaign_id", op: "eq", val: $scope.item.id}, {name:"change_date", op: "eq", val: today}, {name:"date", op:"eq", val: date_str}];
+					Bookedchange.get({q: angular.toJson(q)}, function (item) {
+						var mybc = item.objects[0];
+						if(mybc){
+	    					Bookedchange.update({id: mybc.id, campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+	    				}else{
+	    					Bookedchange.save({campaign_id: $scope.item.id, change_date: today, date: date_str, bookedRev: value.bookedRev});
+		    			}
+		    		});
+	    		});
+			
+        		if ($scope.sfdcid) {$location.url('/approveIOs?approved=' + $scope.sfdcid);} 
+        		else {$location.path('/campaigns');} 
+        	});
+        }else{
+        	$scope.no_advertiser = true;
+        	console.log($scope.no_advertiser);
+        }   
     };
     
 //    $scope.view_history = function(){
