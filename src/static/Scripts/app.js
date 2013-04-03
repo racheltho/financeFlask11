@@ -19,10 +19,11 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/create', { controller: CreateCtrl, templateUrl: 'detail.html' }).
            when('/weekoverweek', { controller: WeekOverWeekCtrl, templateUrl: 'weekoverweek.html' }).
            when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
+           when('/editforecast', { controller: EditForecastCtrl, templateUrl: 'edit_forecast.html' }).
            otherwise({ redirectTo: '/' });
     });     
 
-$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange'], 
+$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange', 'Forecastq', 'Forecastyear'], 
 	function(i, s) {
 		CampaignApp.factory(s, function ($resource) {
 		    return $resource('/api/' + s.toLowerCase() + '/:id', 
@@ -390,6 +391,16 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
     
 };
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
+
+var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear){
+	$http.get('/api/forecastq').success(function(data) {
+ 		$scope.thisq = data.res;
+	});
+	
+};
+
+
+
 
 var DashboardCtrl = function ($scope, $http) {
 	$http.get('/api/thisrev').success(function(data) {

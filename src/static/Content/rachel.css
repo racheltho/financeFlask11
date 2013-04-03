@@ -91,3 +91,12 @@ h4.qc-blue{
 	color: red;
 	/*font-weight: bold;*/
 }
+
+.forecasttable{
+	table-layout: fixed;
+}
+
+thead, td.forecastthead{
+	text-align: center;
+}
+

@@ -1,29 +1,69 @@
 ﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
 
-SELECT CAST(channel || '|' || cp AS VARCHAR) AS A, CAST('This Quarter' AS VARCHAR) AS B, sum("bookedRev") AS ThisQuarter
+CREATE OR REPLACE VIEW ForecastThisQ AS
+SELECT A.*, B."CPA Booked", B."CPA Actual" FROM
+(SELECT channel, sum("bookedRev") AS "CPM Booked", sum("actualRev") AS "CPM Actual"
+--CAST(date_part('quarter', now()) || ' ' || date_part('year', now()) || ' ' || cp AS VARCHAR) 
   FROM booked B
   JOIN campaign A
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
-  WHERE (date_part('quarter', date) = date_part('quarter', now()))
-  AND (date_part('year', date) = date_part('year', now()))
-GROUP BY channel, cp
-
-
-SELECT CAST(channel || '|' || cp AS VARCHAR) AS A, 
-sum("bookedRev") AS B, CAST(date_part('quarter', now()) || ' ' || date_part('year', now())  AS VARCHAR) AS C--, CAST(date_part('quarter', now()) || ' ' || date_part('year', now()) || ' ' || cp AS VARCHAR)
-  FROM booked B
-  JOIN campaign A
-  ON A.id = B.campaign_id
-  JOIN channel C
-  ON A.channel_id = C.id
-  WHERE (date_part('quarter', date) = date_part('quarter', now()))
-  AND (date_part('year', date) = date_part('year', now()))
+  JOIN actual D
+  ON A.id = D.campaign_id
+  WHERE (date_part('quarter', B.date) = date_part('quarter', now()))
+  AND (date_part('year', B.date) = date_part('year', now()))
+  AND (date_part('quarter', D.date) = date_part('quarter', now()))
+  AND (date_part('year', D.date) = date_part('year', now()))
   AND cp LIKE 'CPM'
-GROUP BY channel, cp
+GROUP BY channel) AS A
+LEFT JOIN
+(SELECT channel, sum("bookedRev") AS "CPA Booked", sum("actualRev") AS "CPA Actual"
+  FROM booked B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  JOIN actual D
+  ON A.id = D.campaign_id
+  WHERE (date_part('quarter', B.date) = date_part('quarter', now()))
+  AND (date_part('year', B.date) = date_part('year', now()))
+  AND (date_part('quarter', D.date) = date_part('quarter', now()))
+  AND (date_part('year', D.date) = date_part('year', now()))
+  AND cp LIKE 'CPA'
+GROUP BY channel) AS B
+ON A.channel = B.channel
 
 
+CREATE OR REPLACE VIEW ForecastThisYear AS
+SELECT A.*, B."CPA Booked", B."CPA Actual" FROM
+(SELECT channel, sum("bookedRev") AS "CPM Booked", sum("actualRev") AS "CPM Actual"
+--CAST(date_part('quarter', now()) || ' ' || date_part('year', now()) || ' ' || cp AS VARCHAR) 
+  FROM booked B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  JOIN actual D
+  ON A.id = D.campaign_id
+  WHERE (date_part('year', B.date) = date_part('year', now()))
+  AND (date_part('year', D.date) = date_part('year', now()))
+  AND cp LIKE 'CPM'
+GROUP BY channel) AS A
+LEFT JOIN
+(SELECT channel, sum("bookedRev") AS "CPA Booked", sum("actualRev") AS "CPA Actual"
+  FROM booked B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  JOIN actual D
+  ON A.id = D.campaign_id
+  WHERE (date_part('year', B.date) = date_part('year', now()))
+  AND (date_part('year', D.date) = date_part('year', now()))
+  AND cp LIKE 'CPA'
+GROUP BY channel) AS B
+ON A.channel = B.channel
 
 
 

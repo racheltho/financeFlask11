@@ -71,6 +71,15 @@ def get_booked_changes():
     res = pivot_2(data)
     return json_obj(res)
 
+@app.route('/api/forecastq')
+def get_forecast_q():
+    data = get_sql("SELECT * FROM ForecastThisQ")
+    return json_dict(data)
+
+@app.route('/api/forecastyear')
+def get_forecast_year():
+    data = get_sql("SELECT * FROM ForecastThisYear")
+    return json_dict(data)
 
 @app.route('/api/agencytable/<int:agencyid>')
 def get_agency_table(agencyid):

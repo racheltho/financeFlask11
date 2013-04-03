@@ -1,0 +1,73 @@
+﻿<h2>Edit Forecast</h2> 
+<div class="span12"><div class="qc-blue-line"></div></div>
+<div class="row">
+<form name="detailForm" class="form-horizontal">
+<div class="span4">
+		
+    <div class="control-group" ng-class="{error: detailForm.forecast.$invalid}">
+        <label class="control-label" for="date">Week of</label>
+        <div class="controls">
+            <input type="text" class="input-small" ui-date  ui-date-format="yy-mm-dd" ng-model="item.date" id="date" placeholder="Date" required />
+            <span ng-show="detailForm.forecast.$error.required" class="help-inline">Required</span>
+        </div>
+    </div>
+    <div class="control-group" ng-class="{error: detailForm.forecast.$invalid}">
+    	<label class="control-label" for="quarter">Quarter</label>
+    	<div class="controls">
+			<select ui-select2 style="width:90%" ng-model="item.quarter" id="quarter" data-placeholder="-- Select --">
+            	<option></option>
+    			<option>1</option>
+    			<option>2</option>
+    			<option>3</option>
+    			<option>4</option>
+  			</select>		
+        </div>
+     </div>
+    <div class="control-group" ng-class="{error: detailForm.forecast.$invalid}">
+    	<label class="control-label" for="year">Year</label>
+    	<div class="controls">
+			<select ui-select2  style="width:90%" ng-model="item.year" id="year">
+            	<option>2013</option>
+    			<option>2014</option>
+    			<option>2015</option>
+    			<option>2016</option>
+    			<option>2017</option>
+  			</select>		
+        </div>
+     </div> 
+</div>
+
+<div class="span12">
+	<table class="table table-striped table-bordered table-hover forecasttable" >
+		<thead class="forecastthead">
+			<td>Channel</td><td>Goal</td><td>Last Week's Forecast</td><td>Change</td><td>CPM + Recognized</td><td>QTD Booking</td><td>Deliverable Revenue</td><td>% of Goal Achieved</td>
+		</thead>
+		<tbody>
+		<tr ng-repeat="c in thisq">
+			<td>{{c.channel}}</td>
+			<td><input class="input-small" ng-model="item.goal"></td>
+			<td><input class="input-small" ng-model="item.lastweek"></td>
+			<td><input class="input-small" ng-model="change"></td>
+			<td><input class="input-small" ng-model="item.cpm_rec_booking"></td>
+			<td><input class="input-small" ng-model="item.qtd_booking"></td>
+			<td><input class="input-small" ng-model="item.deliverable_rev"></td>
+			<td><input class="input-small" ng-model="percent"></td>
+		</tr>
+		</tbody>
+	</table>
+	
+	
+	
+</div>
+
+
+<div class="span12">
+	
+<div class="form-actions">
+        <button ng-click="save()" ng-disabled="detailForm.$invalid" class="btn btn-primary">Save</button>
+         <a href="#/history/{{item.id}}"><button ng-show="history" class="btn"> View History</button></a>
+        <button ng-click="cancel()" class="btn">Cancel</button>
+    </div>
+</div>
+</form>
+</div>

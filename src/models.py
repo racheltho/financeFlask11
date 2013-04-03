@@ -419,6 +419,27 @@ class Sfdc(db.Model):
     currency = db.Column(db.Unicode)
     approved = db.Column(db.Boolean)
     
+    
+class Forecastq(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date)
+    quarter = db.Column(db.Integer)
+    year = db.Column(db.Integer)
+    goal = db.Column(db.Float)
+    lastweek = db.Column(db.Float)
+    cpm_rec_booking = db.Column(db.Float)
+    qtd_booking = db.Column(db.Float)
+    deliverable_rev = db.Column(db.Float)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
+    channel = db.relationship('Channel')
+    
+class Forecastyear(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date)
+    fcst = db.Column(db.Float)
+    lastweek = db.Column(db.Float)
+    ytd = db.Column(db.Float)
+
 
 # Create the database tables.
 sfdc_table = Sfdc.__table__
