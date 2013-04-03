@@ -1,5 +1,32 @@
 ﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
 
+SELECT CAST(channel || '|' || cp AS VARCHAR) AS A, CAST('This Quarter' AS VARCHAR) AS B, sum("bookedRev") AS ThisQuarter
+  FROM booked B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  WHERE (date_part('quarter', date) = date_part('quarter', now()))
+  AND (date_part('year', date) = date_part('year', now()))
+GROUP BY channel, cp
+
+
+SELECT CAST(channel || '|' || cp AS VARCHAR) AS A, 
+sum("bookedRev") AS B, CAST(date_part('quarter', now()) || ' ' || date_part('year', now())  AS VARCHAR) AS C--, CAST(date_part('quarter', now()) || ' ' || date_part('year', now()) || ' ' || cp AS VARCHAR)
+  FROM booked B
+  JOIN campaign A
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  WHERE (date_part('quarter', date) = date_part('quarter', now()))
+  AND (date_part('year', date) = date_part('year', now()))
+  AND cp LIKE 'CPM'
+GROUP BY channel, cp
+
+
+
+
+
 CREATE OR REPLACE VIEW CampaignBooked AS
 SELECT C.campaign, C.type, P.product, CH.channel, A.advertiser, C.industry, C.agency, C.sfdc_oid, C.cp, C.start_date, C.end_date, 
   C.cpm_price, C.contracted_impr, C.booked_impr, C.delivered_impr, C.contracted_deal, C.revised_deal, C.opportunity, B.date, B."bookedRev"
