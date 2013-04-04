@@ -26,7 +26,8 @@
     <div class="control-group" ng-class="{error: detailForm.forecast.$invalid}">
     	<label class="control-label" for="year">Year</label>
     	<div class="controls">
-			<select ui-select2  style="width:90%" ng-model="item.year" id="year">
+			<select ui-select2  style="width:90%" ng-model="item.year" id="year" data-placeholder="-- Select --">
+				<option></option>
             	<option>2013</option>
     			<option>2014</option>
     			<option>2015</option>
@@ -40,14 +41,14 @@
 <div class="span12">
 	<table class="table table-striped table-bordered table-hover forecasttable" >
 		<thead class="forecastthead">
-			<td>Channel</td><td>Goal</td><td>Last Week's Forecast</td>
+			<td>Channel</td><td>Forecast</td><td>Last Week's Forecast</td>
 			<td>Change  <a ng-click="calc_change()"><icon name="repeat" /></a></td><td>CPM + Recognized</td><td>QTD Booking</td><td>Deliverable Revenue</td>
 			<td>% of Forecast Achieved  <a ng-click="calc_percent()"><icon name="repeat" /></a></td><td>Goal</td>
 		</thead>
 		<tbody>
-		<tr ng-repeat="c in thisq">
+		<tr ng-repeat="c in channels">
 			<td>{{c.channel}}</td>
-			<td><input class="input-small" ng-model="c.goal"></td>
+			<td><input class="input-small" ng-model="c.forecast"></td>
 			<td><input class="input-small" ng-model="c.lastweek"></td>
 			<td><input class="input-small" ng-model="c.change"></td>
 			<td><input class="input-small" ng-model="c.cpm_rec_booking"></td>

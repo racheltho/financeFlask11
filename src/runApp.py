@@ -76,7 +76,12 @@ def get_booked_changes():
 @app.route('/api/forecastq')
 def get_forecast_q():
     data = get_sql("SELECT * FROM ForecastThisQ")
-    return json_dict_forecast(data)
+    return json_dict_dict(data,"channel")
+
+@app.route('/api/lastforecast')
+def get_forecast_lastweek():
+    data = get_sql("SELECT * FROM ForecastLastWeek")
+    return json_dict_dict(data, "channel_id")
 
 @app.route('/api/forecastyear')
 def get_forecast_year():

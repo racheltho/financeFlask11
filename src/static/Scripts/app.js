@@ -392,36 +392,51 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 };
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
-var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear){
+var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel){
+	
 	$http.get('/api/forecastq').success(function(data) {
- 		$scope.thisq = data.res;
- 		$.each($scope.thisq, function(i,c){ 
- 			c.cpm_rec_booking = Math.round(c.cpmBooked + c.cpaActual);
- 			c.qtd_booking = Math.round(c.cpmBooked + c.cpaBooked);
- 			c.deliverable_rev = Math.round(0.95*c.cpm_rec_booking + 0.7*(c.qtd_booking - c.cpm_rec_booking));
- 		});
+		$scope.thisq = data.res;
+		var q = order_by("id", "asc");
+		$http.get('/api/lastforecast').success(function(data){
+			$scope.lastforecast = data.res;
+			Channel.get({q: angular.toJson(q)}, function(res){
+				$scope.channels = res.objects;		
+				$.each($scope.channels, function(i,c){
+					c.lastweek = $scope.lastforecast[c.id].forecast;
+					c.goal = $scope.lastforecast[c.id].goal;
+					if($scope.thisq[c.channel]){
+						var fromsql = $scope.thisq[c.channel];
+ 						c.cpm_rec_booking = Math.round(fromsql.cpmBooked + fromsql.cpaActual);
+ 						c.qtd_booking = Math.round(fromsql.cpmBooked + fromsql.cpaBooked);
+ 						c.deliverable_rev = Math.round(0.95*c.cpm_rec_booking + 0.7*(c.qtd_booking - c.cpm_rec_booking));
+ 					}
+ 				});
+			});
+		});
+		
 	});
+ 		
 	
 	$scope.calc_change = function(){
-		$.each($scope.thisq, function(i,c){ 
- 			c.change = Math.round(c.goal - c.lastweek);
+		$.each($scope.channels, function(i,c){ 
+ 			c.change = Math.round(c.forecast - c.lastweek);
  		});
 		
 	};
 	
 	$scope.calc_percent = function(){
-		$.each($scope.thisq, function(i,c){ 
- 			c.percent = Math.round(c.deliverable_rev*100/c.goal);
+		$.each($scope.channels, function(i,c){ 
+ 			c.percent = Math.round(c.deliverable_rev*100/c.forecast);
  		});
 		
 	};
 	
 	$scope.save = function(){
-		$.each($scope.thisq, function(i,c){
-			var now = new Date();
-			Forecastq.save({date: $scope.item.date, quarter: $scope.item.quarter, year: $scope.item.year, goal: c.goal, lastweek: c.lastweek, 
-				cpm_rec_booking: c.cpm_rec_booking, qtd_booking: c.qtd_booking, deliverable_rev: c.deliverable_rev, channel_id : c.channel_id, created: now});
-			console.log(c);
+		$.each($scope.channels, function(i,c){
+			var now = new Date('3-28-2013');
+			Forecastq.save({date: $scope.item.date, quarter: $scope.item.quarter, year: $scope.item.year,  forecast: c.forecast, lastweek: c.lastweek, 
+				cpm_rec_booking: c.cpm_rec_booking, qtd_booking: c.qtd_booking, deliverable_rev: c.deliverable_rev, channel_id : c.id, 
+				goal: c.goal, created: now});
 			});
 	};
 	

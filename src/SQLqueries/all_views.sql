@@ -10,6 +10,17 @@ CREATE INDEX booked_campid_index ON booked (campaign_id);
 
 CREATE INDEX campaign_chan_index ON campaign (channel_id);
 
+CREATE OR REPLACE VIEW ForecastLastWeek AS
+SELECT F.channel_id, forecast, goal, created
+FROM forecastq F
+JOIN
+(SELECT MAX(created) AS lastweek_date, channel_id
+FROM forecastq
+WHERE created <= current_date - integer '5'
+GROUP BY channel_id) AS C
+ON F.channel_id = C.channel_id AND F.created = C.lastweek_date
+
+
 
 CREATE OR REPLACE VIEW ForecastThisQ AS
 SELECT A.*, B."cpaBooked", B."cpaActual" FROM

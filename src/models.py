@@ -77,10 +77,10 @@ def str_or_none(entry):
 def json_dict(o):
     return json_obj([dict(d) for d in o])
 
-def json_dict_forecast(o):
+def json_dict_dict(o, field):
     forecast_dict = {};
     for d in o:
-        forecast_dict[d.channel] = dict(d)
+        forecast_dict[d[field]] = dict(d)
     return json_obj(forecast_dict)
 
 
