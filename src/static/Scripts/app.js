@@ -395,7 +395,35 @@ EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear){
 	$http.get('/api/forecastq').success(function(data) {
  		$scope.thisq = data.res;
+ 		$.each($scope.thisq, function(i,c){ 
+ 			c.cpm_rec_booking = Math.round(c.cpmBooked + c.cpaActual);
+ 			c.qtd_booking = Math.round(c.cpmBooked + c.cpaBooked);
+ 			c.deliverable_rev = Math.round(0.95*c.cpm_rec_booking + 0.7*(c.qtd_booking - c.cpm_rec_booking));
+ 		});
 	});
+	
+	$scope.calc_change = function(){
+		$.each($scope.thisq, function(i,c){ 
+ 			c.change = Math.round(c.goal - c.lastweek);
+ 		});
+		
+	};
+	
+	$scope.calc_percent = function(){
+		$.each($scope.thisq, function(i,c){ 
+ 			c.percent = Math.round(c.deliverable_rev*100/c.goal);
+ 		});
+		
+	};
+	
+	$scope.save = function(){
+		$.each($scope.thisq, function(i,c){
+			var now = new Date();
+			Forecastq.save({date: $scope.item.date, quarter: $scope.item.quarter, year: $scope.item.year, goal: c.goal, lastweek: c.lastweek, 
+				cpm_rec_booking: c.cpm_rec_booking, qtd_booking: c.qtd_booking, deliverable_rev: c.deliverable_rev, channel_id : c.channel_id, created: now});
+			console.log(c);
+			});
+	};
 	
 };
 

@@ -77,6 +77,13 @@ def str_or_none(entry):
 def json_dict(o):
     return json_obj([dict(d) for d in o])
 
+def json_dict_forecast(o):
+    forecast_dict = {};
+    for d in o:
+        forecast_dict[d.channel] = dict(d)
+    return json_obj(forecast_dict)
+
+
 def json_obj(o):
     return jsonify(dict(res=o))
 
@@ -426,12 +433,14 @@ class Forecastq(db.Model):
     quarter = db.Column(db.Integer)
     year = db.Column(db.Integer)
     goal = db.Column(db.Float)
+    forecast = db.Column(db.Float)
     lastweek = db.Column(db.Float)
     cpm_rec_booking = db.Column(db.Float)
     qtd_booking = db.Column(db.Float)
     deliverable_rev = db.Column(db.Float)
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
     channel = db.relationship('Channel')
+    created = db.Column(db.DateTime)
     
 class Forecastyear(db.Model):
     id = db.Column(db.Integer, primary_key=True)

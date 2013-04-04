@@ -30,6 +30,8 @@ manager.create_api(Bookedchange, methods=['GET', 'POST', 'DELETE', 'PUT'], resul
 manager.create_api(Actualchange, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=2000)
 manager.create_api(Sfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20, max_results_per_page=10000)
 manager.create_api(Channel, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
+manager.create_api(Forecastq, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
+manager.create_api(Forecastyear, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Sfdccampaign, methods=['GET'], results_per_page=20)
 
 @app.route('/static/api/campaigntoexcel')
@@ -74,7 +76,7 @@ def get_booked_changes():
 @app.route('/api/forecastq')
 def get_forecast_q():
     data = get_sql("SELECT * FROM ForecastThisQ")
-    return json_dict(data)
+    return json_dict_forecast(data)
 
 @app.route('/api/forecastyear')
 def get_forecast_year():

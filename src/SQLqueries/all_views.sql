@@ -1,8 +1,19 @@
 ﻿CREATE INDEX adv_adv_index ON advertiser (advertiser);
 
+CREATE INDEX chan_chan_index ON channel (channel);
+
+CREATE INDEX campaign_id_index ON campaign (id);
+
+CREATE INDEX actual_campid_index ON actual (campaign_id);
+
+CREATE INDEX booked_campid_index ON booked (campaign_id);
+
+CREATE INDEX campaign_chan_index ON campaign (channel_id);
+
+
 CREATE OR REPLACE VIEW ForecastThisQ AS
-SELECT A.*, B."CPA Booked", B."CPA Actual" FROM
-(SELECT channel, sum("bookedRev") AS "CPM Booked", sum("actualRev") AS "CPM Actual"
+SELECT A.*, B."cpaBooked", B."cpaActual" FROM
+(SELECT C.id AS channel_id, channel, sum("bookedRev") AS "cpmBooked", sum("actualRev") AS "cpmActual"
 --CAST(date_part('quarter', now()) || ' ' || date_part('year', now()) || ' ' || cp AS VARCHAR) 
   FROM booked B
   JOIN campaign A
@@ -16,9 +27,9 @@ SELECT A.*, B."CPA Booked", B."CPA Actual" FROM
   AND (date_part('quarter', D.date) = date_part('quarter', now()))
   AND (date_part('year', D.date) = date_part('year', now()))
   AND cp LIKE 'CPM'
-GROUP BY channel) AS A
-LEFT JOIN
-(SELECT channel, sum("bookedRev") AS "CPA Booked", sum("actualRev") AS "CPA Actual"
+GROUP BY channel, C.id) AS A
+LEFT OUTER JOIN
+(SELECT C.id AS channel_id, channel, sum("bookedRev") AS "cpaBooked", sum("actualRev") AS "cpaActual"
   FROM booked B
   JOIN campaign A
   ON A.id = B.campaign_id
@@ -31,7 +42,7 @@ LEFT JOIN
   AND (date_part('quarter', D.date) = date_part('quarter', now()))
   AND (date_part('year', D.date) = date_part('year', now()))
   AND cp LIKE 'CPA'
-GROUP BY channel) AS B
+GROUP BY channel, C.id) AS B
 ON A.channel = B.channel
 
 

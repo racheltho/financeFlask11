@@ -40,18 +40,21 @@
 <div class="span12">
 	<table class="table table-striped table-bordered table-hover forecasttable" >
 		<thead class="forecastthead">
-			<td>Channel</td><td>Goal</td><td>Last Week's Forecast</td><td>Change</td><td>CPM + Recognized</td><td>QTD Booking</td><td>Deliverable Revenue</td><td>% of Goal Achieved</td>
+			<td>Channel</td><td>Goal</td><td>Last Week's Forecast</td>
+			<td>Change  <a ng-click="calc_change()"><icon name="repeat" /></a></td><td>CPM + Recognized</td><td>QTD Booking</td><td>Deliverable Revenue</td>
+			<td>% of Forecast Achieved  <a ng-click="calc_percent()"><icon name="repeat" /></a></td><td>Goal</td>
 		</thead>
 		<tbody>
 		<tr ng-repeat="c in thisq">
 			<td>{{c.channel}}</td>
-			<td><input class="input-small" ng-model="item.goal"></td>
-			<td><input class="input-small" ng-model="item.lastweek"></td>
-			<td><input class="input-small" ng-model="change"></td>
-			<td><input class="input-small" ng-model="item.cpm_rec_booking"></td>
-			<td><input class="input-small" ng-model="item.qtd_booking"></td>
-			<td><input class="input-small" ng-model="item.deliverable_rev"></td>
-			<td><input class="input-small" ng-model="percent"></td>
+			<td><input class="input-small" ng-model="c.goal"></td>
+			<td><input class="input-small" ng-model="c.lastweek"></td>
+			<td><input class="input-small" ng-model="c.change"></td>
+			<td><input class="input-small" ng-model="c.cpm_rec_booking"></td>
+			<td><input class="input-small" ng-model="c.qtd_booking"></td>
+			<td><input class="input-small" ng-model="c.deliverable_rev"></td>
+			<td><input class="input-small" ng-model="c.percent"></td>
+			<td><input class="input-small" ng-model="c.goal"</td>
 		</tr>
 		</tbody>
 	</table>
