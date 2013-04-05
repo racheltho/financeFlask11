@@ -146,8 +146,10 @@
 	<button ng-click="calculate()" class="btn btn-primary">Calculate</button>
 </div>
 
-<div class="span8">
-	<div class ="span1" align="bottom">Booked:</div>
+<div id="tempclass"><br /></div>
+
+<div id="bookedclass">
+	<div class ="span1">Booked:</div>
 	<div class="span1" ng-repeat="b in item.bookeds">
 		<table class="table table-striped table-condensed table-hover">
 		<thead class="customTable" > <th> {{b.date | date:'MM/yy'}}</th> </thead>
@@ -156,7 +158,7 @@
 		</table>
 	</div>
 </div>
-<div class="span8" align="right">
+<div id="actualclass">
 	<div class = "span1">Actual:</div>
 	<div class="span1" ng-repeat="a in item.actuals">
 		<table class="table table-striped table-condensed table-hover">

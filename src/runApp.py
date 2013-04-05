@@ -88,6 +88,18 @@ def get_forecast_year():
     data = get_sql("SELECT * FROM ForecastThisYear")
     return json_dict(data)
 
+@app.route('/api/forecastweekof')
+def get_weekof():
+    data = get_sql("SELECT date FROM Forecastq GROUP by date ORDER BY date DESC")
+    return json_dict(data)
+
+
+@app.route('/api/weekof/<weekdate>')
+def get_forecast_weekof(weekdate):
+    data = get_sql("SELECT CH.channel, F.forecast, F.lastweek, F.cpm_rec_booking, F.qtd_booking, F.deliverable_rev, F.goal FROM forecastq F JOIN (SELECT MAX(created) AS lastweek_date, channel_id FROM forecastq WHERE date = date '" + str(weekdate) + "' GROUP BY channel_id) AS C ON F.channel_id = C.channel_id AND F.created = C.lastweek_date JOIN channel CH ON F.channel_id = CH.id ")
+    return json_dict(data)
+
+
 @app.route('/api/agencytable/<int:agencyid>')
 def get_agency_table(agencyid):
     data = get_sql("SELECT * FROM Agencytable WHERE A LIKE " + str(agencyid) + "|| '|%'")

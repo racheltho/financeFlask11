@@ -20,6 +20,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/weekoverweek', { controller: WeekOverWeekCtrl, templateUrl: 'weekoverweek.html' }).
            when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
            when('/editforecast', { controller: EditForecastCtrl, templateUrl: 'edit_forecast.html' }).
+           when('/viewforecast', { controller: ViewForecastCtrl, templateUrl: 'view_forecast.html' }).
            otherwise({ redirectTo: '/' });
     });     
 
@@ -210,6 +211,11 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	$scope.calculate = function() {
 		$scope.item.bookeds = calc_sl($scope.calc_start, $scope.calc_end, $scope.item.bookeds, "bookedRev", $scope.calc_deal);
 		$scope.item.actuals = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.actuals, "actualRev");
+		if($scope.item.bookeds.length > 5){
+			document.getElementById("bookedclass").setAttribute("class", "span12");
+			document.getElementById("actualclass").setAttribute("class", "span12");
+			document.getElementById("tempclass").setAttribute("class", "span12");
+		}
 	};
 	
 	$scope.update_campaign_calcs = function() {
@@ -251,6 +257,11 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 			}
 		};
 	};
+	
+
+	document.getElementById("bookedclass").setAttribute("class", "span8");
+	document.getElementById("actualclass").setAttribute("class", "span8");
+
 	
 	
 	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
@@ -393,7 +404,6 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel){
-	
 	$http.get('/api/forecastq').success(function(data) {
 		$scope.thisq = data.res;
 		var q = order_by("id", "asc");
@@ -416,19 +426,16 @@ var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel
 		
 	});
  		
-	
 	$scope.calc_change = function(){
 		$.each($scope.channels, function(i,c){ 
  			c.change = Math.round(c.forecast - c.lastweek);
  		});
-		
 	};
 	
 	$scope.calc_percent = function(){
 		$.each($scope.channels, function(i,c){ 
  			c.percent = Math.round(c.deliverable_rev*100/c.forecast);
  		});
-		
 	};
 	
 	$scope.save = function(){
@@ -437,12 +444,24 @@ var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel
 			Forecastq.save({date: $scope.item.date, quarter: $scope.item.quarter, year: $scope.item.year,  forecast: c.forecast, lastweek: c.lastweek, 
 				cpm_rec_booking: c.cpm_rec_booking, qtd_booking: c.qtd_booking, deliverable_rev: c.deliverable_rev, channel_id : c.id, 
 				goal: c.goal, created: now});
-			});
+		});
 	};
 	
 };
 
 
+var ViewForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel){
+	$http.get('/api/forecastweekof').success(function(data){
+		$scope.select_weekof = data.res;
+	});
+
+	$scope.get_weekof = function(){
+		$http.get('/api/weekof/' + $scope.item.weekof).success(function(data){
+			$scope.forecast_data = data.res;
+		});
+	};
+	
+};
 
 
 var DashboardCtrl = function ($scope, $http) {

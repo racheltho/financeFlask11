@@ -21,6 +21,21 @@ GROUP BY channel_id) AS C
 ON F.channel_id = C.channel_id AND F.created = C.lastweek_date
 
 
+SELECT date 
+FROM Forecastq
+GROUP by date
+
+SELECT F.*, forecast, goal, created
+FROM forecastq F
+JOIN
+(SELECT MAX(created) AS lastweek_date, channel_id
+FROM forecastq
+WHERE date = date '2013-04-03'
+GROUP BY channel_id) AS C
+ON F.channel_id = C.channel_id AND F.created = C.lastweek_date
+
+SELECT * FROM Forecastq
+
 
 CREATE OR REPLACE VIEW ForecastThisQ AS
 SELECT A.*, B."cpaBooked", B."cpaActual" FROM
