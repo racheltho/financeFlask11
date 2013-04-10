@@ -21,6 +21,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
            when('/editforecast', { controller: EditForecastCtrl, templateUrl: 'edit_forecast.html' }).
            when('/viewforecast', { controller: ViewForecastCtrl, templateUrl: 'view_forecast.html' }).
+           when('/approveIOs2', {controller: ApproveIOs2Ctrl, templateUrl: 'approveIOs2.html'}).
            otherwise({ redirectTo: '/' });
     });     
 
@@ -320,7 +321,6 @@ var CreateCtrl = function ($scope, $location, $routeParams, $http, Campaign, Cam
 			$http.get('/api/sfdc_adver/' + item.advertiser).success(function(data2){
 					$scope.select_advertisers_sfdc = data2.res;
 					$scope.ad_sfdc = $scope.select_advertisers_sfdc.length;
-					console.log($scope.ad_sfdc);
 			});
 		});
 	}
@@ -403,17 +403,154 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 };
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
-var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel){
+
+var ApproveIOs2Ctrl = function($scope, $routeParams, $location, $http, $q, Sfdc, Sfdccampaign, Advertiser, Rep) {
+	var make_query = function() {
+        	var q = order_by("start_date", "asc");
+            q.filters = [{name: "approved", op: "eq", val: false}];
+            if($scope.query) {q.filters.push({name: "ioname", op: "ilike", val: "%" + $scope.query + "%"});}
+        	return angular.toJson(q);
+	};
+    	
+    $scope.show_name = function(last, first) {
+    	if (last) {return last + ', ' + first;}
+    	return "";
+    };
+    
+    $scope.search = function () {
+        var res = Sfdccampaign.get(
+            { page: $scope.page, q: make_query(), results_per_page: 20 },
+            function () {
+                $scope.no_more = res.page === res.total_pages;
+                if (res.page===1) { $scope.sfdc_camps=[]; }
+                $scope.sfdc_camps = $scope.sfdc_camps.concat(res.objects);
+                $.each($scope.sfdc_camps, function(i,o){
+                	if(o.advertiser_id){
+                		Advertiser.get({id: o.advertiser_id}, function(item){
+                			o.advertisername = item.advertiser;
+                		});
+                	}
+                	$http.get('/api/sfdc_adver/' + o.sadvertiser).success(function(data2){
+						o.select_advertisers_sfdc = data2.res;
+						o.ad_sfdc = o.select_advertisers_sfdc.length;
+					});
+					o.calc_start = parseDate(o.start_date);
+        			o.calc_end = parseDate(o.end_date);
+        			o.calc_deal = o.revised_deal || o.contracted_deal;
+        			o.bookeds = o.bookeds || [];
+	    			$.map(o.bookeds, function(val, i) {
+	    				val.date = parseDate(val.date);
+	    			});
+	    			o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
+	    			o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
+	    			console.log(o);
+				});
+                /*$.each($scope.sfdc_camps, function(i,o){
+                	$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'], function(i,o) {	
+                		if(data[o]) {$scope.item[o] = data[o];}	
+                	});
+				if (data.rep) {
+					$scope.item.rep = data.rep;
+				}
+	        	$scope.update_campaign_calcs();
+                	
+                });*/
+               	
+            }
+        );
+    };
+
+
+	
+	$scope.approve = function (id) {
+        Sfdc.update({ id: id }, {approved:true}, function () {
+            $('#item_'+id).fadeOut();
+        });
+    };
+
+	$scope.show_more = function () { return !$scope.no_more; };
+
+    $scope.reset = function() {
+        $scope.page = 1;
+        $scope.search();
+    };
+ 
+    $scope.reset();
+
+	if ($routeParams.approved) {
+		$scope.approve($routeParams.approved);
+	}
+	
+	
+	/*
+	if ($scope.sfdcid) {
+		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
+			console.log(data);
+			$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id',
+				'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
+				function(i,o) {	if(data[o]) {$scope.item[o] = data[o];}	});
+			if (data.rep) {
+				$scope.item.rep = data.rep;
+			}
+	        $scope.update_campaign_calcs();
+		});
+		Sfdccampaign.get({id: $scope.sfdcid}, function(item){
+			$http.get('/api/sfdc_adver/' + item.advertiser).success(function(data2){
+					$scope.select_advertisers_sfdc = data2.res;
+					$scope.ad_sfdc = $scope.select_advertisers_sfdc.length;
+					console.log($scope.ad_sfdc);
+			});
+		});
+	}*/
+	
+	
+	
+	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
+		return 	{
+			formatSelection: fmt, formatResult: fmt,
+			minimumInputLength: minchars,
+		    ajax: {
+		      url: "/api/" + name,
+		      data: function (term, page) {
+		        var q = order_by(sort_by, "asc");
+		        q.filters = [{name: sort_by, op: "ilike", val: "%" + term + "%"} ];
+		        if (xtra_filters) {	q.filters = q.filters.concat(xtra_filters); }
+		        return {q:angular.toJson(q)};
+		      },
+		      results: function (data) { return {results: data.objects}; }
+		    }/*,
+			initSelection: function(elm, cb) {
+				var id=$(element).val();
+		        if (id==="") {
+		        	return cb(null);
+		        }
+				return cb(id);
+			}*/
+		};
+	};
+	
+	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
+		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
+	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
+		'advertiser', 'advertiser', 2);
+	
+}; 
+
+
+
+var EditForecastCtrl = function ($scope, $http, $location, Forecastq, Forecastyear, Channel){
 	$http.get('/api/forecastq').success(function(data) {
 		$scope.thisq = data.res;
 		var q = order_by("id", "asc");
 		$http.get('/api/lastforecast').success(function(data){
 			$scope.lastforecast = data.res;
 			Channel.get({q: angular.toJson(q)}, function(res){
-				$scope.channels = res.objects;		
+				$scope.channels = res.objects;	
 				$.each($scope.channels, function(i,c){
-					c.lastweek = $scope.lastforecast[c.id].forecast;
-					c.goal = $scope.lastforecast[c.id].goal;
+					if($scope.lastforecast.length !== undefined){ 
+						c.lastweek = $scope.lastforecast[c.id].forecast;
+						c.goal = $scope.lastforecast[c.id].goal;
+					}
 					if($scope.thisq[c.channel]){
 						var fromsql = $scope.thisq[c.channel];
  						c.cpm_rec_booking = Math.round(fromsql.cpmBooked + fromsql.cpaActual);
@@ -440,11 +577,18 @@ var EditForecastCtrl = function ($scope, $http, Forecastq, Forecastyear, Channel
 	
 	$scope.save = function(){
 		$.each($scope.channels, function(i,c){
-			var now = new Date('3-28-2013');
+			var now = new Date();
+			$.each([$scope.item.date, $scope.item.quarter, $scope.item.year, c.forecast, c.lastweek, c.cpm_rec_booking, c.qtd_booking, c.deliverable_rev, c.id, c.goal],
+				function(i,o){
+					if(o === ''){ o = null;}
+				});
 			Forecastq.save({date: $scope.item.date, quarter: $scope.item.quarter, year: $scope.item.year,  forecast: c.forecast, lastweek: c.lastweek, 
 				cpm_rec_booking: c.cpm_rec_booking, qtd_booking: c.qtd_booking, deliverable_rev: c.deliverable_rev, channel_id : c.id, 
-				goal: c.goal, created: now});
-		});
+				goal: c.goal, created: now}, function(){
+					$location.path('/viewforecast');
+				});
+			});
+		
 	};
 	
 };

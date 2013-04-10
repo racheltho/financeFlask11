@@ -17,20 +17,7 @@ from datetime import date, timedelta
 from datetime import datetime as D
 from xldate import xldate_as_tuple
 
-from flask import jsonify
-from itertools import groupby, islice, chain
-from operator import itemgetter
-from collections import defaultdict
-
-from requests.auth import AuthBase
-from sanetime import time
-from werkzeug.urls import Href
-import requests
-
-         
- 
-#def jsonify(data): 
-#    return Response(json.dumps(data, cls=APIEncoder),  mimetype='application/json')
+from itertools import chain
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = flask.Flask(__name__)
@@ -77,171 +64,6 @@ def str_or_none(entry):
     else:
         return entry   
 
-def json_dict(o):
-    return json_obj([dict(d) for d in o])
-
-def json_dict_dict(o, field):
-    forecast_dict = {};
-    for d in o:
-        forecast_dict[d[field]] = dict(d)
-    return json_obj(forecast_dict)
-
-
-def json_obj(o):
-    return jsonify(dict(res=o))
-
-def get_sql(sql):
-    s = db.session
-    sql = a.text(sql)
-    res = s.execute(sql);
-    return  res.fetchall()
-
-def pivot_1(data):
-    cols = sorted(set(row[1] for row in data))
-    pivot = list((k, defaultdict(lambda: 0, (islice(d, 1, None) for d in data))) 
-             for k, data in groupby(data, itemgetter(0)))
-    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
-    return [['Key'] + cols] + res
- 
-def pivot_2(data):
-    cols = sorted(set(row[1] for row in data))
-    pivot = list((k, defaultdict(lambda: u'0|0', (islice(d, 1, None) for d in data))) 
-             for k, data in groupby(data, itemgetter(0)))
-    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
-    return [['Key'] + cols] + res 
- 
-def pivot_19(data):
-    cols = sorted(set(row[19] for row in data))
-    print(cols)
-    pivot = list((k, defaultdict(lambda: 0, (islice(d, 19, None) for d in data))) 
-             for k, data in groupby(data, itemgetter(0)))
-    res = [[k] + [details[c] for c in cols] for k, details in pivot] 
-    return [['Key'] + cols] + res 
- 
-    
-class SalesforceAuth(AuthBase):
-    """
-    Usage:
-        sf = Salesforce(username=username, password=password, security_token=security_token)
-    Get all active campaigns, by account:
-        ac = active_campaigns(sf)
-    """
-    # These are from the Draper remote access app
-    # CLIENT_ID = '3MVG9VmVOCGHKYBTJhT3AbJPhaPXnB8fyM.si9oRE4.j9wrsTG0oeRugr2E6kmkmzk9QNZzm8UJOKW2D.s3NF'
-    # CLIENT_SECRET = '2476564724669919262'
-    
-    # These are from the Finance Reporting app
-    CLIENT_ID = '3MVG9VmVOCGHKYBTJhT3AbJPhaFEHVTrg4R3YShGvoU.blmkKLAELKE1hWZcUwpcGpR5Td.Pjotgije3g8gYc'
-    CLIENT_SECRET = '2869450356585909208'
-
-    def __init__(self, username, password, security_token,
-                 url='https://login.salesforce.com/services/oauth2/token',
-                 client_id=CLIENT_ID, client_secret=CLIENT_SECRET):
-        self.url = url
-        # TODO(sday): Add some facility to switch to test.salesforce.com when
-        # provided with sandbox username.
-        self.username = username
-        self.password = password
-        self.security_token = security_token
-        self.client_id = client_id
-        self.client_secret = client_secret
-
-        self.access_token = None
-        self.instance_url = None
-        self.issued_at = None
-
-        self.authorize()
-
-    def authorize(self):
-        r = requests.post(self.url, data={
-                'grant_type': 'password',
-                'client_id': self.client_id,
-                'client_secret': self.client_secret,
-                'username': self.username,
-                'password': self.password + self.security_token})
-
-        r.raise_for_status()
-
-        authdata = r.json()
-
-        self.access_token = authdata['access_token']
-        self.issued_at = time(int(authdata['issued_at']))
-        self.instance_url = Href(authdata['instance_url'])
-
-        # There are two other fields in this response that we are ignoring for
-        #  now (thx akovacs):
-        # 1. `id` - This is a url that leads to a description about the user
-        #    associated with this authorization session, including email, name
-        #    and username.
-        # 2. `signature` - This is a base64-encoded HMAC-SHA256 that can be
-        #    used to verify that the response was not tampered with. As we
-        #    become larger, it probably makes sense to verify this, but for
-        #    now, we'll leave it alone.
-        self.id_url = authdata['id']
-        self.signature = authdata['signature']
-
-    def __call__(self, request):
-
-        if self.access_token is None:
-            self.authorize()
-
-        request.headers['Authorization'] = 'Bearer {token}'.format(token=self.access_token)
-        return request
-
-
-class Salesforce(object):
-    """
-    A simple interface to salesforce, returning basic dict objects and
-    providing transparent iteration over resources.
-    """
-    VERSION = "v26.0"
-
-    def __init__(self, username, password, security_token, version=VERSION, session=requests.Session()):
-        self.version = version
-        self.session = session
-        self.session.auth = SalesforceAuth(username, password, security_token)
-
-    def base(self, *args, **kwargs):
-        """
-        Build url from base instance_url
-        """
-        return self.session.auth.instance_url(*args, **kwargs)
-
-    def href(self, *args, **kwargs):
-        """
-        Build a url against the api endpoint.
-        """
-        return self.base('services', 'data', self.version, *args, **kwargs)
-
-    def _iter_response(self, url, key):
-        """
-        Iterate over the response records, fetching the next urls if specified.
-        """
-        while True:
-            r = self.session.get(url)
-            # TODO(sday): Errors messages are available in json
-            r.raise_for_status()
-            content = r.json()
-            for obj in content[key]:
-                yield obj
-            if 'nextRecordsUrl' not in content:
-                break
-            url = self.base(content['nextRecordsUrl'])
-
-    def sobjects(self):
-        """
-        Retrieve information about the sobjects.
-        """
-        return self._iter_response(self.href('sobjects'), 'sobjects')
-
-    def describe(self, sobject):
-        r = self.session.get(self.href('sobjects', sobject, 'describe'))
-        r.raise_for_status()
-        return r.json()
-
-    def query(self, q):
-        return self._iter_response(self.href('query', q=q), 'records')
-
     
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -279,14 +101,6 @@ class Advertiser(db.Model):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-"""
-class Association(db.Model):
-    id = db.Column(db.Integer, primary_key=True)   
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
-    campaign = db.relationship('Campaign', backref=backref('associations', cascade='all,delete'))
-    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    rep = db.relationship('Rep')
-"""
 
 association_table = db.Table('association', db.Model.metadata,
     db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id', ondelete="CASCADE")),
@@ -935,33 +749,6 @@ def populateCampaignRevenue10(wb):
     print("PopulateCampaignRevenue10 Finished") 
 
 
-def cleanDB():
-    s = db.session
-    s.query(Booked).delete()
-    s.query(Actual).delete()
-    s.query(Campaign).delete()    
-    s.commit()
-"""
-    s.query(Rep).delete()
-    s.query(Advertiser).delete()
-    s.query(Parent).delete()
-    s.query(Industry).delete()    
-    s.query(Channel).delete()
-    s.query(Product).delete()
-"""
-
-## XXX Doesn't work
-def DropDB():
-    db.session.execute(a.text('DROP TABLE Product CASCADE')); 
-    db.session.execute(a.text('DROP TABLE Channel CASCADE')); 
-
-
-
-'''
-data = get_sql('SELECT * FROM HistoricalCPM')
-res = pivot_1(data)
-print(json.dumps(list(res), indent=2))
-'''
 
 
 #DropDB()
@@ -986,14 +773,5 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 
 #import pdb; pdb.set_trace()
 
-
-
-"""
-s = db.session
-sql = a.text('SELECT * FROM BookedRevenue')
-res = s.execute(sql);
-data =  res.fetchall()
-print json.dumps([dict(d) for d in data])
-"""
 
 print("Leaving models.py")

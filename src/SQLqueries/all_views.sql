@@ -18,14 +18,15 @@ JOIN
 FROM forecastq
 WHERE created <= current_date - integer '5'
 GROUP BY channel_id) AS C
-ON F.channel_id = C.channel_id AND F.created = C.lastweek_date
+ON F.channel_id = C.channel_id AND F.created = C.lastweek_date;
 
 
 SELECT date 
 FROM Forecastq
 GROUP by date
+ORDER BY date DESC;
 
-SELECT F.*, forecast, goal, created
+SELECT CH.channel, F.forecast, F.lastweek, F.cpm_rec_booking, F.qtd_booking, F.deliverable_rev, F.goal
 FROM forecastq F
 JOIN
 (SELECT MAX(created) AS lastweek_date, channel_id
@@ -33,8 +34,8 @@ FROM forecastq
 WHERE date = date '2013-04-03'
 GROUP BY channel_id) AS C
 ON F.channel_id = C.channel_id AND F.created = C.lastweek_date
-
-SELECT * FROM Forecastq
+JOIN channel CH
+ON F.channel_id = CH.id;
 
 
 CREATE OR REPLACE VIEW ForecastThisQ AS
