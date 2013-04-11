@@ -12,7 +12,7 @@ import xlrd
 import csv
 
 import re 
-from time import mktime
+from time import mktime, strptime, struct_time
 from datetime import date, timedelta
 from datetime import datetime as D
 from xldate import xldate_as_tuple
@@ -60,6 +60,17 @@ def get_date_or_none(entry):
         except:
             my_date = None
     return my_date
+
+
+def sfdc_date_or_none(entry):
+    my_date = None
+    try:
+        my_date = D(int(entry[0:4]), int(entry[5:7]), int(entry[8:10]), int(entry[11:13]), int(entry[14:16]), int(entry[17:19]))
+#       sf_end = D(int(end_str[0:4]), int(end_str[5:7]), int(end_str[8:10]), int(end_str[11:13]), int(end_str[14:16]), int(end_str[17:19]))
+    except:
+        my_date = None
+    return my_date
+
 
 
 def int_or_none(entry):
@@ -410,6 +421,40 @@ class Actualchange(db.Model):
     actualRev = db.Column(db.Float)    
     
 
+class Newsfdc(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    opid = db.Column(db.Integer)
+    ioauto = db.Column(db.Integer)
+    optype = db.Column(db.Unicode)
+    dealtype = db.Column(db.Unicode)
+    saleschannel = db.Column(db.Unicode)
+    advertiseracc = db.Column(db.Unicode)
+    opname = db.Column(db.Unicode)
+    ioname = db.Column(db.Unicode)
+    campname = db.Column(db.Unicode)
+    salesplanner = db.Column(db.Unicode)
+    pricing = db.Column(db.Unicode)
+    start = db.Column(db.DateTime)
+    end = db.Column(db.DateTime)
+    setup = db.Column(db.Unicode)
+    opindustry = db.Column(db.Unicode)
+    totalcampbudget = db.Column(db.Float)
+    budget = db.Column(db.Float)
+    signedio = db.Column(db.Unicode)
+    geo = db.Column(db.Unicode)
+    arledger = db.Column(db.Unicode)
+    erpsync = db.Column(db.Unicode)
+    oracle = db.Column(db.Integer)
+    invoiceemail = db.Column(db.Unicode)
+    owner_last = db.Column(db.Unicode)
+    owner_first = db.Column(db.Unicode)
+    agency = db.Column(db.Unicode)
+    date_created = db.Column(db.DateTime)
+    approved = db.Column(db.Boolean)
+
+
+    
+    
 class Sfdc(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     oid = db.Column(db.Integer)
@@ -478,14 +523,131 @@ def strptime_or_none(mydate):
         return D.strptime(mydate,'%Y-%m-%d').date()
 
 
+
+
+def get_newsfdc(sf):
+    s = db.session
+    for row in sf.query("""SELECT IO.id, op.Opportunity_ID__c, IO.rtbid__c, aa.Type, op.Type, IO.SalesChannel__c, aa.Name, op.Name, IO.Name, op.Campaign_EVENT__c, op.SalesPlanner__c, op.Rate_Type__c, 
+                                IO.Start_Date__c, IO.End_Date__c, IO.SetUp_Status__c, aa.Industry, op.rm_Amount__c, IO.Budget__c, aa.SignedIO__c, aa.AR__c, aa.ERPSyncStatus__c, aa.OracleCustomer__c, 
+                                aa.InvoiceDistEmail__c, IO.GeoTargeting__c, op.Owner.Name, IO.CreatedDate, ag.Name
+                        FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r ag, IO.Advertiser_Account__r aa
+                        WHERE IO.CreatedDate > LAST_WEEK"""):
+
+        try:
+            sf_agency = row['Opportunity__r']['Agency__r']['Name']
+        except:
+            sf_agency = None
+            
+        opp_r = row['Opportunity__r']
+
+        adacc_r = row['Advertiser_Account__r']
+        sf_opid = opp_r['Opportunity_ID__c']
+        try:
+            sf_opid = int_or_none(opp_r['Opportunity_ID__c'])
+        except:
+            sf_opid = None
+        sf_ioauto = row['rtbid__c']
+        sf_optype = adacc_r['Type']
+        sf_dealtype = opp_r['Type']
+        sf_saleschannel = row['SalesChannel__c']
+        try:
+            sf_advertiseracc = adacc_r['Name']
+        except:
+            sf_advertiseracc = None
+        #sf_opagency = opp_r['Agency__c']
+        sf_opname = opp_r['Name']
+        sf_ioname = row['Name']
+        sf_campname = opp_r['Campaign_EVENT__c']
+        sf_salesplanner = opp_r['SalesPlanner__c']
+        sf_pricing = opp_r['Rate_Type__c']
+        start_str = row['Start_Date__c']
+        end_str = row['End_Date__c']
+        created_str = row['CreatedDate']
+        sf_created = sfdc_date_or_none(created_str)
+        sf_start = sfdc_date_or_none(start_str)
+        sf_end = sfdc_date_or_none(end_str)
+        try:
+            sf_setup = row['Setup_Status__c']
+        except:
+            sf_setup = None
+        sf_opindustry = adacc_r['Industry']
+        sf_totalcampbudg = opp_r['rm_Amount__c']
+        sf_budget = row['Budget__c']
+        sf_signedio = adacc_r['SignedIO__c']
+        sf_geo = row['GeoTargeting__c']
+        sf_arledger = adacc_r['AR__c']
+        sf_erpsync = adacc_r['ERPSyncStatus__c']
+        sf_oracle = adacc_r['OracleCustomer__c']
+        sf_invoice = adacc_r['InvoiceDistEmail__c']
+        sf_owner = opp_r['Owner']
+        sf_owner_last = None
+        sf_owner_first = None
+        if(sf_owner):
+            owner_temp = sf_owner['Name']
+            last = re.search('[A-Z][a-z]*$', owner_temp)
+            sf_owner_last = last.group()
+            if(sf_owner_last == "Pigeon"):
+                sf_owner_first = "Matt"
+            else:
+                if(sf_owner_last == "Bartlett"):
+                    sf_owner_last = "Vinco"
+                    sf_owner_first = "Valerie"
+                else:
+                    first = re.search('^[A-Z][a-z]*', owner_temp)
+                    sf_owner_last = last.group()
+                    sf_owner_first = first.group()
+        
+
+
+        a = Newsfdc(opid = sf_opid, ioauto = sf_ioauto, optype = sf_optype, dealtype = sf_dealtype, saleschannel = sf_saleschannel, advertiseracc = sf_advertiseracc, opname = sf_opname,
+                    ioname = sf_ioname, campname = sf_campname, salesplanner = sf_salesplanner, pricing = sf_pricing, start = sf_start, end = sf_end, setup = sf_setup, opindustry = sf_opindustry,
+                    totalcampbudget = sf_totalcampbudg, budget = sf_budget, signedio = sf_signedio, geo = sf_geo, arledger = sf_arledger, erpsync = sf_erpsync, oracle = sf_oracle, invoiceemail = sf_invoice, 
+                    owner_last = sf_owner_last, owner_first = sf_owner_first, date_created = sf_created, agency = sf_agency, approved = False)
+        s.add(a)
+        s.commit()
+
+
+#        sf_ioname = row['Name']
+#        sf_channel = row['SalesChannel__c']
+#        sf_budget = row['Budget__c']
+#        
+#        sf_cp = row['Opportunity__r']['Rate_Type__c']
+#        
+#        start_date = row['Opportunity__r']['CampaignStart__c']
+#        end_date = row['Opportunity__r']['CampaignEnd__c']
+#        last_mod_temp = row['Opportunity__r']['LastModifiedDate']
+#        sf_last_modified = None
+#        if(last_mod_temp):
+#            last_modified = last_mod_temp[0:10]
+#            sf_last_modified = strptime_or_none(last_modified)
+#    
+#        sf_start_date = strptime_or_none(start_date)
+#        sf_end_date = strptime_or_none(end_date)
+#        
+#        
+#        agency_r = row['Opportunity__r']['Agency__r']
+#        sf_agencyname = None
+#        if(agency_r):
+#            sf_agencyname = agency_r['Name']
+#       
+#
+#        advertiser = row['Advertiser_Account__r']
+#        sf_advertiser = None
+#        sf_currency = None
+#        if(advertiser):
+#            sf_advertiser = advertiser['Name']
+#            sf_currency = advertiser['CurrencyIsoCode']
+
+        
+
+
 def sfdc_from_sfdc(sf):
     s = db.session
-    for row in sf.query("""SELECT IO.Name, IO.CreatedDate, IO.LastModifiedDate, IO.Start_Date__c, IO.End_Date__c, IO.Budget__c, IO.SalesChannel__c, IO.Advertiser_Account__c, 
-                                op.Name, op.CreatedDate, a.Name, op.CampaignStart__c, op.CampaignEnd__c, op.Rate_Type__c, op.Opportunity_ID__c, op.SalesPlanner__c, 
-                                op.LastModifiedDate, op.Owner.Name, 
-                                aa.Name, aa.CurrencyIsoCode
-                            FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r a, IO.Advertiser_Account__r aa
-                            WHERE op.Id <> null"""):
+    for row in sf.query("""SELECT IO.id, op.Opportunity_ID__c, IO.rtbid__c, aa.Type, op.Type, IO.SalesChannel__c, IO.Advertiser_Account__c, op.Agency__c, op.Name, IO.Name, op.SalesPlanner__c, op.Rate_Type__c, 
+                                IO.Start_Date__c, IO.End_Date__c, IO.SetUp_Status__c, op.ClientStrategist__c, op.rm_Amount__c, IO.Budget__c, aa.SignedIO__c, aa.AR__c, aa.ERPSyncStatus__c, aa.OracleCustomer__c, 
+                                aa.InvoiceDistEmail__c
+                        FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r a, IO.Advertiser_Account__r aa
+                        WHERE op.Id <> null"""):
 
         #sf_io = row['Insertion_Order__c']
 
@@ -978,8 +1140,8 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #readSFDCexcel()
 
 
-#sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
-#ac = sfdc_from_sfdc(sf)
+sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
+ac = get_newsfdc(sf)
 
 
 
