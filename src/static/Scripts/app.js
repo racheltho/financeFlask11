@@ -1,6 +1,6 @@
 ﻿"use strict";
 
-/*global ListCtrl, EditCtrl, CreateCtrl, HomeCtrl, RepListCtrl, EditRepCtrl, CreateRepCtrl, DashboardCtrl, HistDashboardCtrl, ApproveIOsCtrl, BookedRevCtrl, AgencyDashboardCtrl */
+/*global ListCtrl, EditCtrl, CreateCtrl, HomeCtrl, RepListCtrl, EditRepCtrl, CreateRepCtrl, DashboardCtrl, HistDashboardCtrl, ApproveIOsCtrl, BookedRevCtrl, AgencyDashboardCtrl, NewIOsCtrl */
 
 var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
      config(function ($routeProvider) {
@@ -22,10 +22,11 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/editforecast', { controller: EditForecastCtrl, templateUrl: 'edit_forecast.html' }).
            when('/viewforecast', { controller: ViewForecastCtrl, templateUrl: 'view_forecast.html' }).
            when('/approveIOs2', {controller: ApproveIOs2Ctrl, templateUrl: 'approveIOs2.html'}).
+           when('/newIOs', {controller: NewIOsCtrl, templateUrl: 'newIOs.html'}).
            otherwise({ redirectTo: '/' });
     });     
 
-$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange', 'Forecastq', 'Forecastyear'], 
+$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange', 'Forecastq', 'Forecastyear', 'Newsfdc'], 
 	function(i, s) {
 		CampaignApp.factory(s, function ($resource) {
 		    return $resource('/api/' + s.toLowerCase() + '/:id', 
@@ -505,6 +506,110 @@ var ApproveIOs2Ctrl = function($scope, $routeParams, $location, $http, $q, Sfdc,
 	
 	
 	
+	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
+		return 	{
+			formatSelection: fmt, formatResult: fmt,
+			minimumInputLength: minchars,
+		    ajax: {
+		      url: "/api/" + name,
+		      data: function (term, page) {
+		        var q = order_by(sort_by, "asc");
+		        q.filters = [{name: sort_by, op: "ilike", val: "%" + term + "%"} ];
+		        if (xtra_filters) {	q.filters = q.filters.concat(xtra_filters); }
+		        return {q:angular.toJson(q)};
+		      },
+		      results: function (data) { return {results: data.objects}; }
+		    }/*,
+			initSelection: function(elm, cb) {
+				var id=$(element).val();
+		        if (id==="") {
+		        	return cb(null);
+		        }
+				return cb(id);
+			}*/
+		};
+	};
+	
+	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
+		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
+	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
+		'advertiser', 'advertiser', 2);
+	
+}; 
+
+
+
+
+
+var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Advertiser, Rep) {
+	var make_query = function() {
+        	var q = order_by("start_date", "asc");
+            q.filters = [{name: "approved", op: "eq", val: false}];
+        	return angular.toJson(q);
+	};
+    	
+    $scope.show_name = function(last, first) {
+    	if (last) {return last + ', ' + first;}
+    	return "";
+    };
+    
+    $scope.search = function () {
+        var res = Newsfdc.get(
+            { page: $scope.page, q: make_query(), results_per_page: 20 },
+            function () {
+                $scope.no_more = res.page === res.total_pages;
+                if (res.page===1) { $scope.newsfdcs =[]; }
+                $scope.newsfdcs = $scope.newsfdcs.concat(res.objects);
+                $console.log($scope.newsfdcs);
+                $.each($scope.newsfdcs, function(i,o){
+                	$http.get('/api/sfdc_adver/' + o.advertiseracc).success(function(data2){
+						o.select_advertisers_sfdc = data2.res;
+						o.ad_sfdc = o.select_advertisers_sfdc.length;
+					});
+					
+					var q = order_by('last_name', 'asc');
+        			q.filters = [{name: "last_name", op: "ilike", val: o.owner_last}, {name:"first_name", op: "ilike", val: o.owner_first}];
+					Rep.get({q: angular.toJson(q)}, function (item) {
+						var my_rep = item.objects[0];
+					});
+					o.calc_start = parseDate(o.start);
+        			o.calc_end = parseDate(o.end);
+        			o.budget = o.totalcampbudget;
+        			o.bookeds = [];
+	    			$.map(o.bookeds, function(val, i) {
+	    				val.date = parseDate(val.date);
+	    			});
+	    			o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
+	    			o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
+	    			console.log(o);
+				});
+                               	
+            }
+        );
+    };
+
+
+	
+	$scope.approve = function (id) {
+        Newsfdc.update({ id: id }, {approved:true}, function () {
+            $('#item_'+id).fadeOut();
+        });
+    };
+
+	$scope.show_more = function () { return !$scope.no_more; };
+
+    $scope.reset = function() {
+        $scope.page = 1;
+        $scope.search();
+    };
+ 
+    $scope.reset();
+
+	if ($routeParams.approved) {
+		$scope.approve($routeParams.approved);
+	}
+	
+		
 	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
 		return 	{
 			formatSelection: fmt, formatResult: fmt,

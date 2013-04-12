@@ -449,6 +449,7 @@ class Newsfdc(db.Model):
     owner_last = db.Column(db.Unicode)
     owner_first = db.Column(db.Unicode)
     agency = db.Column(db.Unicode)
+    sfdc_date_created = db.Column(db.DateTime)
     date_created = db.Column(db.DateTime)
     approved = db.Column(db.Boolean)
 
@@ -531,7 +532,7 @@ def get_newsfdc(sf):
                                 IO.Start_Date__c, IO.End_Date__c, IO.SetUp_Status__c, aa.Industry, op.rm_Amount__c, IO.Budget__c, aa.SignedIO__c, aa.AR__c, aa.ERPSyncStatus__c, aa.OracleCustomer__c, 
                                 aa.InvoiceDistEmail__c, IO.GeoTargeting__c, op.Owner.Name, IO.CreatedDate, ag.Name
                         FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r ag, IO.Advertiser_Account__r aa
-                        WHERE IO.CreatedDate > LAST_WEEK"""):
+                        WHERE IO.CreatedDate > LAST_WEEK AND IO.Opportunity__r.id <> null"""):
 
         try:
             sf_agency = row['Opportunity__r']['Agency__r']['Name']
@@ -541,21 +542,28 @@ def get_newsfdc(sf):
         opp_r = row['Opportunity__r']
 
         adacc_r = row['Advertiser_Account__r']
-        sf_opid = opp_r['Opportunity_ID__c']
+        
         try:
             sf_opid = int_or_none(opp_r['Opportunity_ID__c'])
         except:
             sf_opid = None
         sf_ioauto = row['rtbid__c']
         sf_optype = adacc_r['Type']
-        sf_dealtype = opp_r['Type']
+        try:
+            sf_dealtype = opp_r['Type']
+        except:
+            sf_dealtype = None
         sf_saleschannel = row['SalesChannel__c']
         try:
             sf_advertiseracc = adacc_r['Name']
         except:
             sf_advertiseracc = None
         #sf_opagency = opp_r['Agency__c']
-        sf_opname = opp_r['Name']
+        try:
+            sf_opname = opp_r['Name']
+        except:
+            sf_opname = None
+        
         sf_ioname = row['Name']
         sf_campname = opp_r['Campaign_EVENT__c']
         sf_salesplanner = opp_r['SalesPlanner__c']
@@ -602,7 +610,7 @@ def get_newsfdc(sf):
         a = Newsfdc(opid = sf_opid, ioauto = sf_ioauto, optype = sf_optype, dealtype = sf_dealtype, saleschannel = sf_saleschannel, advertiseracc = sf_advertiseracc, opname = sf_opname,
                     ioname = sf_ioname, campname = sf_campname, salesplanner = sf_salesplanner, pricing = sf_pricing, start = sf_start, end = sf_end, setup = sf_setup, opindustry = sf_opindustry,
                     totalcampbudget = sf_totalcampbudg, budget = sf_budget, signedio = sf_signedio, geo = sf_geo, arledger = sf_arledger, erpsync = sf_erpsync, oracle = sf_oracle, invoiceemail = sf_invoice, 
-                    owner_last = sf_owner_last, owner_first = sf_owner_first, date_created = sf_created, agency = sf_agency, approved = False)
+                    owner_last = sf_owner_last, owner_first = sf_owner_first, date_created = D.now(), sfdc_date_created = sf_created, agency = sf_agency, approved = False)
         s.add(a)
         s.commit()
 
@@ -838,7 +846,7 @@ def populateCampaignRevenue(wb):
     for rownum in range(2,5890): #sh.nrows):
         campaign = sh.cell(rownum,13).value
         print(campaign)
-        date_created = date(2013, 3, 28)
+        date_created = D.now()
         t = sh.cell(rownum,3).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,4).value)
         chan = sh.cell(rownum,5).value
@@ -1140,8 +1148,8 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #readSFDCexcel()
 
 
-sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
-ac = get_newsfdc(sf)
+#sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
+#ac = get_newsfdc(sf)
 
 
 

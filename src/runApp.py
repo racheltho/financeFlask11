@@ -32,6 +32,7 @@ manager.create_api(Sfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_p
 manager.create_api(Channel, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Forecastq, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
 manager.create_api(Forecastyear, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=20)
+manager.create_api(Newsfdc, methods=['GET', 'POST', 'DELETE', 'PUT'], results_per_page=200)
 manager.create_api(Sfdccampaign, methods=['GET'], results_per_page=20)
 
 @app.route('/static/api/campaigntoexcel')
