@@ -1,4 +1,3 @@
-
 thead.customTable {background-color: #E7E7E7;}
 
 body {
@@ -10,6 +9,11 @@ body {
 }
 
 tbody.sfdccamp { border-bottom: 2px gray; }
+
+th, td.limitwidth{
+	word-wrap: break-word;
+	max-width: 110px;
+}
 
 td.camp { 
 	text-align: right;

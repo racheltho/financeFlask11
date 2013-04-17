@@ -65,7 +65,7 @@ def get_date_or_none(entry):
 def sfdc_date_or_none(entry):
     my_date = None
     try:
-        my_date = D(int(entry[0:4]), int(entry[5:7]), int(entry[8:10]), int(entry[11:13]), int(entry[14:16]), int(entry[17:19]))
+        my_date = D(int(entry[0:4]), int(entry[5:7]), int(entry[8:10]))
 #       sf_end = D(int(end_str[0:4]), int(end_str[5:7]), int(end_str[8:10]), int(end_str[11:13]), int(end_str[14:16]), int(end_str[17:19]))
     except:
         my_date = None
@@ -339,8 +339,9 @@ class Campaign(db.Model):
     advertiser = db.relationship('Advertiser')
     agency = db.Column(db.Unicode)
     industry = db.Column(db.Unicode)
-    agency = db.Column(db.Unicode)
-    sfdc_oid = db.Column(db.Integer)    ##  Would like to make this unique, but can't without resolving rep issue
+    sfdc_oid = db.Column(db.Integer)
+    ioauto = db.Column(db.Integer)
+    ##  Would like to make this unique, but can't without resolving rep issue
     #rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
     #rep = db.relationship('Rep')
     # To allow multiple reps.  Right now, this is creating too many problems
@@ -434,8 +435,8 @@ class Newsfdc(db.Model):
     campname = db.Column(db.Unicode)
     salesplanner = db.Column(db.Unicode)
     pricing = db.Column(db.Unicode)
-    start = db.Column(db.DateTime)
-    end = db.Column(db.DateTime)
+    start = db.Column(db.Date)
+    end = db.Column(db.Date)
     setup = db.Column(db.Unicode)
     opindustry = db.Column(db.Unicode)
     totalcampbudget = db.Column(db.Float)
@@ -449,8 +450,8 @@ class Newsfdc(db.Model):
     owner_last = db.Column(db.Unicode)
     owner_first = db.Column(db.Unicode)
     agency = db.Column(db.Unicode)
-    sfdc_date_created = db.Column(db.DateTime)
-    date_created = db.Column(db.DateTime)
+    sfdc_date_created = db.Column(db.Date)
+    date_created = db.Column(db.Date)
     approved = db.Column(db.Boolean)
 
 
@@ -532,7 +533,7 @@ def get_newsfdc(sf):
                                 IO.Start_Date__c, IO.End_Date__c, IO.SetUp_Status__c, aa.Industry, op.rm_Amount__c, IO.Budget__c, aa.SignedIO__c, aa.AR__c, aa.ERPSyncStatus__c, aa.OracleCustomer__c, 
                                 aa.InvoiceDistEmail__c, IO.GeoTargeting__c, op.Owner.Name, IO.CreatedDate, ag.Name
                         FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r ag, IO.Advertiser_Account__r aa
-                        WHERE IO.CreatedDate > LAST_WEEK AND IO.Opportunity__r.id <> null"""):
+                        WHERE IO.CreatedDate >= LAST_WEEK AND IO.Opportunity__r.id <> null"""):
 
         try:
             sf_agency = row['Opportunity__r']['Agency__r']['Name']
@@ -555,7 +556,8 @@ def get_newsfdc(sf):
             sf_dealtype = None
         sf_saleschannel = row['SalesChannel__c']
         try:
-            sf_advertiseracc = adacc_r['Name']
+            temp_ad = adacc_r['Name']
+            sf_advertiseracc = re.sub("'", "", temp_ad)
         except:
             sf_advertiseracc = None
         #sf_opagency = opp_r['Agency__c']
@@ -604,6 +606,7 @@ def get_newsfdc(sf):
                     first = re.search('^[A-Z][a-z]*', owner_temp)
                     sf_owner_last = last.group()
                     sf_owner_first = first.group()
+        
         
 
 

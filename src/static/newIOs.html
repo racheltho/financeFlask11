@@ -1,18 +1,12 @@
 <h2>Approve new IOs</h2>
-<form class="form-search">
-    <div class="input-append">
-        <input type="text" ng-model="query" class="input-medium search-query" placeholder="Search" />
-        <button ng-click="reset()" type="submit" class="btn"><i class="icon-search"></i></button>    
-    </div>
-    <button ng-click="query=''; reset()" ng-disabled="!query" type="submit" class="btn">Reset</button>
-</form>
 
 <table class="table table-striped table-condensed table-hover">
     <thead>
-    	<th></th>
-    	<th>IO Auto ID</th>
-    	<th>Name</th>
+    	<th>Auto ID</th>
+    	<th class="limitwidth">IO Name</th>
+    	<th class="limitwidth">Camp Name</th>
     	<th>Advertiser</th>
+    	<th></th>
     	<th>CPA/CPM</th>
     	<th>Channel</th>
     	<th>Rep Name</th>
@@ -22,60 +16,73 @@
         <th></th><th></th>
     </thead>
     	<tbody ng-repeat="rec in newsfdcs" id="item_{{rec.id}}" class="sfdccamp">
-			<tr><td> SFDC: </td>
+		<tr>
             <td> {{rec.ioauto}} </td>
-            <td> {{rec.ioname}} </td>
-            <td> {{rec.campname}} </td>
+            <td class="limitwidth"> {{rec.ioname}} </td>
+            <td class="limitwidth"> {{rec.campname}} </td>
             <td> {{rec.advertiseracc}} </td>
-            <td> {{rec.agency}} </td>
+            <td></td>
             <td> {{rec.pricing}} </td>
-            <td> {{rec.channel }} </td>
-            <td> {{rec.owner_last }} </td>
+            <td> {{rec.saleschannel }} </td>
+            <td> {{show_name(rec.owner_last, rec.owner_first) }} </td>
             <td> {{rec.start | date:'MM/dd/yy' }} </td>
             <td> {{rec.end | date:'MM/dd/yy' }} </td>
             <td> {{rec.budget | number:0 }} </td>
-            <td></td><td></td></tr>
-            <tr ng-show="rec.campaign"><td> Campaign: </td>
-            	<td> {{rec.sfdc_oid}} </td>
-            	<td> {{rec.campaign }} </td>
-	           	<td> {{rec.advertisername}} </td>
-            	<td> {{rec.ccp }}</td>
-            	<td> {{rec.channel.channel}}</td>
-            	<td> {{show_name(rec.last_name, rec.first_name) }}</td>
-           	 	<td> {{rec.cstart_date | date}}</td>
-            	<td> {{rec.cend_date | date}}</td>
-            	<td> {{rec.revised_deal | currency }}</td>
-				<div><td><a href="#/edit/{{rec.cid}}?fromsfdc={{rec.id}}"><button>Edit</button></a></td>
-            	<td><button ng-click="approve(rec.id)">Approve</button></td></div>
-            </tr>
-            <tr ng-show="!rec.campaign">
+            <td></td><td></td>
+        </tr>
+        <tr>
             	<td></td>
-            	 <td> {{rec.oid}} </td>
-            	<td> <input type="text" ng-model="rec.ioname" id="campaign" placeholder="" required /> </td>
-            	<td ng-show="rec.ad_sfdc > 1"> <select ui-select2 ng-model="rec.advertiser1_id" data-placeholder="-- Select one --">
+            	 <td  class="limitwidth"> {{rec.oid}} </td>
+            	<td> <input type="text" ng-model="rec.ioname" id="campaign" placeholder=""  class="limitwidth" required /> </td>
+            	<td ng-show="rec.ad_sfdc > 1"> <select ui-select2 ng-model="rec.advertiser1_id"  style="width:150px;" data-placeholder="-- Select one --">
         	    	<option></option>
     				<option ng-repeat="a in rec.select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option> </select>
     			</td>
-          	 	<td ng-show="rec.ad_sfdc < 2"> <select ui-select2 ng-model="rec.advertiser2_id">
+          	 	<td ng-show="rec.ad_sfdc==1"> <select ui-select2 ng-model="rec.advertiser2_id" style="width:150px;">
     				<option ng-repeat="a in rec.select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option> </select>
     			</td>
     			
-    			<td ng-show="!rec.ad_sfdc"> <input ui-select2="select_advertisers" ng-model="rec.advertiser3" data-placeholder="-- Select One --" /></td>		
-            	<td> {{rec.cp}} </td>
-    	        <td> {{rec.channel }} </td>
-    	        <td> {{rec.owner_name}} </td>
-            	<td> {{rec.start_date | date:'MM/dd/yy'}} </td>
-            	<td> {{rec.end_date | date:'MM/dd/yy'}} </td>
-            	<td> {{rec.budget | number:0 }} </td>
-            	<td></td><td></td>
+    			<td ng-show="!rec.ad_sfdc"> <input ui-select2="select_advertisers" ng-model="rec.advertiser3" data-placeholder="-- Select one --" /></td>	
+    			
+    			<td><button class="btn-small" ng-click="add_advertiser(rec)">Add new</button></td>
+    			
+            	<td> <select ui-select2 ng-model="rec.pricing" id="cp" style="width:70px;" data-placeholder="-- Select One --">
+            		<option></option>
+            		<option value="CPA">CPA</option>
+            		<option value="CPM">CPM</option>
+            		</select> </td>
+    	        <td> <select ui-select2 ng-model="item.channel_id" id="channel" style="width:120px;" data-placeholder="-- Select One --">
+            		<option></option>
+            		<option ng-repeat="c in select_channels" value="{{c.id}}">{{c.channel}}</option>
+            </select> </td>
+    	        <td> <select ui-select2 id="rep" ng-model="rec.my_rep.id" style="width:180px;" data-placeholder="-- Select One --">
+    	        	<option></option>
+    	        	<option ng-repeat="r in select_reps" value="{{r.id}}">{{ r.last_name + ', ' + r.first_name }}</option>
+    	        </td>
+    	        <!--<td><input type="text" value="{{rec.my_rep.last_name + ', ' + rec.my_rep.first_name}}" disabled /></td>-->
+            	<td> <input class="input-small" type="text" ui-date ui-date-format="yy-mm-dd" ng-model="rec.start" placeholder="Date" /> </td>
+            	<td> <input class="input-small" type="text" ui-date ui-date-format="yy-mm-dd" ng-model="rec.end" placeholder="Date" /> </td>
+            	<td> <input class="input-small" type="text" ng-model="rec.budget" /></td>
+            	<td><button ng-click="calculate(rec)" class="btn btn-primary">Calc</button></td>
             </tr>
-            <tr><td></td><td></td><td></td><td>Dates:</td> <td ng-repeat="b in rec.bookeds">{{b.date | date:'MM/yy'}} </td>
+            <tr><td></td><td></td><td></td><td ng-show="rec.add_new">	<input ng-model="rec.new_advertiser" type="text" />
+            	<button class="btn-small" ng-click="create_advertiser(rec)">Create new advertiser</button></td>
+            	<td>Dates:</td> <td ng-repeat="b in rec.bookeds">{{b.date | date:'MM/yy'}} </td>
             	
             </tr>
-            <tr><td></td><td></td><td></td><td>Booked</td> <td ng-repeat="b in rec.bookeds"> <input class="input-small" ng-model ="b.bookedRev" /> </td>
+            <tr><td></td><td></td><td></td><td ng-show="rec.add_new"></td><td>Booked</td> <td ng-repeat="b in rec.bookeds"> <input class="input-small" type="text" style="max-width:60px;" ng-model ="b.bookedRev" /> </td>
+           	
+           	<td></td><td></td>
            	</tr>
-			<tr><td>&nbsp</td></tr>
+			<!--<tr><td>&nbsp</td></tr>-->
             </tbody>
 </table>
 
 <a href="" ng-click = "page = page + 1; search()" ng-show ="show_more()">Show more</a>
+<br /><br />
+<div>
+<button ng-click="approve_all()" class="btn btn-primary">
+            Approve All
+</button>
+</div>
+<br /><br />

@@ -541,11 +541,18 @@ var ApproveIOs2Ctrl = function($scope, $routeParams, $location, $http, $q, Sfdc,
 
 
 
-var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Advertiser, Rep) {
+var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Campaignchange, Advertiser, Channel, Rep, Bookedchange) {
+	var get_sel_list = function(model, field, ngmodel_fld) {
+		var q = order_by(field, "asc");
+		model.get({q: angular.toJson(q)}, function(items) {
+			$scope[ngmodel_fld] = items.objects;
+	 	});
+	};
+	
 	var make_query = function() {
-        	var q = order_by("start_date", "asc");
-            q.filters = [{name: "approved", op: "eq", val: false}];
-        	return angular.toJson(q);
+        var q = order_by("ioname", "asc");
+        q.filters = [{name: "approved", op: "eq", val: false}];
+        return angular.toJson(q);
 	};
     	
     $scope.show_name = function(last, first) {
@@ -553,6 +560,7 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
     	return "";
     };
     
+  
     $scope.search = function () {
         var res = Newsfdc.get(
             { page: $scope.page, q: make_query(), results_per_page: 20 },
@@ -560,7 +568,6 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
                 $scope.no_more = res.page === res.total_pages;
                 if (res.page===1) { $scope.newsfdcs =[]; }
                 $scope.newsfdcs = $scope.newsfdcs.concat(res.objects);
-                $console.log($scope.newsfdcs);
                 $.each($scope.newsfdcs, function(i,o){
                 	$http.get('/api/sfdc_adver/' + o.advertiseracc).success(function(data2){
 						o.select_advertisers_sfdc = data2.res;
@@ -568,20 +575,21 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 					});
 					
 					var q = order_by('last_name', 'asc');
-        			q.filters = [{name: "last_name", op: "ilike", val: o.owner_last}, {name:"first_name", op: "ilike", val: o.owner_first}];
+					var ownerstring = o.owner_first + "%";
+        			q.filters = [{name: "last_name", op: "ilike", val: o.owner_last}, {name:"first_name", op: "ilike", val: ownerstring}];
 					Rep.get({q: angular.toJson(q)}, function (item) {
-						var my_rep = item.objects[0];
+						o.my_rep = item.objects[0];
 					});
 					o.calc_start = parseDate(o.start);
         			o.calc_end = parseDate(o.end);
-        			o.budget = o.totalcampbudget;
         			o.bookeds = [];
-	    			$.map(o.bookeds, function(val, i) {
-	    				val.date = parseDate(val.date);
-	    			});
-	    			o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
-	    			o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
-	    			console.log(o);
+        			if(o.calc_start !== null && o.calc_end !== null){
+	    				$.map(o.bookeds, function(val, i) {
+	    					val.date = parseDate(val.date);
+	    				});
+	    				o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
+	    				o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
+					}
 				});
                                	
             }
@@ -589,13 +597,91 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
     };
 
 
-	
-	$scope.approve = function (id) {
-        Newsfdc.update({ id: id }, {approved:true}, function () {
-            $('#item_'+id).fadeOut();
-        });
-    };
+	$scope.approve_all = function(){
+		$.each($scope.newsfdcs, function(i,o){
+			Newsfdc.update({ id: o.id }, {approved:true}, function () {
+            	$('#item_'+ o.id).fadeOut();
+        	});
+        	var now = new Date();
+        	var today = $.datepicker.formatDate('yy-mm-dd', now); 
+        	o.advertiser_id = o.advertiser1_id || o.advertiser2_id || o.advertiser3_id;
+        	o.reps = [];
+        	console.log(o.my_rep);
+        	
+	    	Campaign.save({date_created: o.now, campaign: o.ioname, cp: o.pricing, product_id: o.product_id, channel_id: o.channel_id, rep: o.reps,
+	    		advertiser_id: o.advertiser_id, agency: o.agency, ioauto: o.ioauto, contracted_deal: o.budget, revised_deal: o.budget, start_date: o.start,
+	    		end_date: o.end}, function(item) {
+		    		var now = new Date();
+    	    		var today = $.datepicker.formatDate('yy-mm-dd', now); 
+        			var q = order_by("change_date", "asc");
+        			if(o.my_rep.id !== ""){ 
+        				o.reps = [];
+        				o.reps.push(o.my_rep);
+        				Campaign.update({id: item.id}, {rep: o.reps});
+        				}   			
+	    			Campaignchange.save({campaign_id: item.id, change_date : today, start_date: o.start, 
+	    				end_date: o.end, revised_deal: o.budget});
+	    			$.each(o.bookeds, function(index, value){
+	    				Bookedchange.save({campaign_id: item.id, change_date: today, date: value.date, bookedRev: value.bookedRev});
+	    			});
+	    		//$location.path(path); 
+	    	});
+	    });		
+	};
 
+	
+	$scope.add_rep = function() {
+		if (!$scope.new_rep) {return;}
+		var reps = $scope.item.rep;
+		var new_rep = $scope.new_rep;
+		if(_.find(reps, function(o) {return o.id === new_rep.id.toString();})) { return; }
+		$scope.item.rep.push(new_rep);
+		$scope.new_rep = "";
+	};
+
+	$scope.add_advertiser = function(rec) {
+		rec.add_new = true;		
+	};
+	
+	$scope.create_advertiser = function(rec) {
+		Advertiser.save({advertiser: rec.new_advertiser}, function(){
+			console.log(rec);
+			rec.no_advertiser = false;
+			rec.add_new = false;
+			var q = order_by("id", "asc");
+    	    q.filters = [{name: "advertiser", op: "like", val: rec.new_advertiser}];
+			Advertiser.get({q: angular.toJson(q)}, function (item) {
+				rec.advertiser = item.objects[0];
+			});
+		});
+	};
+
+	$scope.delete_rep = function(rep) {
+		if (!rep) {return;}
+		var reps = $scope.item.rep;
+		var idx = reps.indexOf(rep);
+		if (idx<0) {return;}
+		$scope.item.rep.splice(idx,1);
+		$('#rep_' + rep.id).fadeOut();
+	};
+		
+	$scope.get_from_rep = function(item){
+		if (!item) {return;}
+    	if (item.product_id) {
+        	Product.get( {id: item.product_id}, function(p) {
+	        	if(p) {$scope.item.product_id = p.id;}
+        	});
+        }
+
+    	if (item.channel_id) {
+    		Channel.get( {id: item.channel_id}, function(c) {
+	        	if(c) {$scope.item.channel_id = c.id;}
+	        });
+        }
+    	$scope.item.type = item.type;
+	};
+	
+	
 	$scope.show_more = function () { return !$scope.no_more; };
 
     $scope.reset = function() {
@@ -609,6 +695,13 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 		$scope.approve($routeParams.approved);
 	}
 	
+	$scope.calculate = function(rec) {
+		console.log(rec);
+		rec.calc_start = parseDate(rec.start);
+        rec.calc_end = parseDate(rec.end);
+		rec.bookeds = calc_sl(rec.calc_start, rec.calc_end, rec.bookeds, "bookedRev", rec.budget);
+	};
+		
 		
 	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
 		return 	{
@@ -623,19 +716,22 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 		        return {q:angular.toJson(q)};
 		      },
 		      results: function (data) { return {results: data.objects}; }
-		    }/*,
+		    },
 			initSelection: function(elm, cb) {
 				var id=$(element).val();
 		        if (id==="") {
 		        	return cb(null);
 		        }
 				return cb(id);
-			}*/
+			}
 		};
 	};
 	
-	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
-		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
+	get_sel_list(Channel, 'channel', "select_channels");
+	get_sel_list(Rep, 'last_name', "select_reps");
+	
+//	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
+//		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
 	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
 		'advertiser', 'advertiser', 2);
 	
