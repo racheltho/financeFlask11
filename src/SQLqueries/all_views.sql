@@ -70,7 +70,7 @@ LEFT OUTER JOIN
   AND (date_part('year', D.date) = date_part('year', now()))
   AND cp LIKE 'CPA'
 GROUP BY channel, C.id) AS B
-ON A.channel = B.channel
+ON A.channel = B.channel;
 
 
 CREATE OR REPLACE VIEW ForecastThisYear AS
@@ -101,7 +101,7 @@ LEFT JOIN
   AND (date_part('year', D.date) = date_part('year', now()))
   AND cp LIKE 'CPA'
 GROUP BY channel) AS B
-ON A.channel = B.channel
+ON A.channel = B.channel;
 
 
 
@@ -145,14 +145,30 @@ SELECT channel, cast (date_part('year', B.date) || ' ' || 'Q' || date_part('quar
   ORDER BY 1,2;
 
 CREATE OR REPLACE VIEW HistoricalCount AS
-SELECT cast(channel || '|' || cp AS Varchar) AS cpchannel, cast (date_part('year', B.date) AS INT) as year, count(A."advertiser_id")
+(SELECT cast(channel || '|' || cp AS Varchar) AS cpchannel, cast (date_part('year', B.date) AS INT) as year, count(P.id)
   FROM campaign A
   JOIN actual B
   ON A.id = B.campaign_id
   JOIN channel C
   ON A.channel_id = C.id
+  JOIN advertiser AD
+  ON A.advertiser_id = AD.id
+  JOIN parent P
+  ON AD.parent_id = P.id
+  WHERE channel NOT LIKE 'Publisher'
   GROUP BY channel, A.cp, cast (date_part('year', B.date) AS INT)
-  ORDER BY channel, A.cp DESC;
+  ORDER BY channel, A.cp DESC)
+UNION
+(SELECT cast(channel || '|' || cp AS Varchar) AS cpchannel, cast (date_part('year', B.date) AS INT) as year, count(A.advertiser_id)
+  FROM campaign A
+  JOIN actual B
+  ON A.id = B.campaign_id
+  JOIN channel C
+  ON A.channel_id = C.id
+  WHERE channel LIKE 'Publisher'
+  GROUP BY channel, A.cp, cast (date_part('year', B.date) AS INT)
+  ORDER BY channel, A.cp DESC)
+  ORDER BY cpchannel DESC, year ASC;
 
   CREATE OR REPLACE VIEW HistoricalCPA AS
 SELECT channel, cast (date_part('year', B.date) AS INT) as year, sum("actualRev") AS Actual
@@ -236,7 +252,7 @@ ON BB.campaign_id = DD.campaign_id
 JOIN campaign A
 ON A.id = BB.campaign_id
 WHERE BB."bookedRev" - DD."bookedRev" <> 0 AND DD.change_date - BB.change_date > 0
-ORDER BY BB.campaign_id, BB.date
+ORDER BY BB.campaign_id, BB.date;
 
 CREATE OR REPLACE VIEW NewBookedChanges AS
 SELECT DISTINCT ON (Campaign, BB.date) cast(A.campaign || '|' || BB.change_date || '|' || DD.change_date AS varchar) AS Campaign, BB.date, cast(BB."bookedRev" || '|' || DD."bookedRev" AS Varchar) AS Booked --, BB."bookedRev" - DD."bookedRev" AS Difference
@@ -266,5 +282,5 @@ ON BB.campaign_id = DD.campaign_id
   AND BB.date = DD.date
 JOIN campaign A
 ON A.id = BB.campaign_id
-WHERE BB."bookedRev" - DD."bookedRev" <> 0 AND DD.change_date - BB.change_date > 0
+WHERE BB."bookedRev" - DD."bookedRev" <> 0 AND DD.change_date - BB.change_date > 0;
 --ORDER BY BB.campaign_id, BB.date

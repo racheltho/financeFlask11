@@ -51,7 +51,7 @@
             		<option value="CPA">CPA</option>
             		<option value="CPM">CPM</option>
             		</select> </td>
-    	        <td> <select ui-select2 ng-model="item.channel_id" id="channel" style="width:120px;" data-placeholder="-- Select One --">
+    	        <td> <select ui-select2 ng-model="rec.channel.id" id="channel" style="width:120px;" data-placeholder="-- Select One --">
             		<option></option>
             		<option ng-repeat="c in select_channels" value="{{c.id}}">{{c.channel}}</option>
             </select> </td>

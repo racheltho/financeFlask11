@@ -26,7 +26,7 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            otherwise({ redirectTo: '/' });
     });     
 
-$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange', 'Forecastq', 'Forecastyear', 'Newsfdc'], 
+$.each(['Campaign', 'Advertiser', 'Product', 'Rep', 'Booked', 'Actual', 'Sfdc', 'Channel', 'Channelmapping', 'Sfdccampaign', 'Parent', 'Campaignchange', 'Bookedchange', 'Actualchange', 'Forecastq', 'Forecastyear', 'Newsfdc'], 
 	function(i, s) {
 		CampaignApp.factory(s, function ($resource) {
 		    return $resource('/api/' + s.toLowerCase() + '/:id', 
@@ -541,7 +541,7 @@ var ApproveIOs2Ctrl = function($scope, $routeParams, $location, $http, $q, Sfdc,
 
 
 
-var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Campaignchange, Advertiser, Channel, Rep, Bookedchange) {
+var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Campaignchange, Advertiser, Channel, Channelmapping, Rep, Bookedchange) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
 		model.get({q: angular.toJson(q)}, function(items) {
@@ -580,6 +580,14 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 					Rep.get({q: angular.toJson(q)}, function (item) {
 						o.my_rep = item.objects[0];
 					});
+					
+					var q2 = order_by('salesforce_channel', 'asc');
+        			q2.filters = [{name: "salesforce_channel", op: "ilike", val: o.saleschannel}];
+					Channelmapping.get({q: angular.toJson(q2)}, function (item) {
+						o.channel = item.objects[0].channel;
+						console.log(o.channel);
+					});
+					
 					o.calc_start = parseDate(o.start);
         			o.calc_end = parseDate(o.end);
         			o.bookeds = [];
@@ -606,7 +614,6 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
         	var today = $.datepicker.formatDate('yy-mm-dd', now); 
         	o.advertiser_id = o.advertiser1_id || o.advertiser2_id || o.advertiser3_id;
         	o.reps = [];
-        	console.log(o.my_rep);
         	
 	    	Campaign.save({date_created: o.now, campaign: o.ioname, cp: o.pricing, product_id: o.product_id, channel_id: o.channel_id, rep: o.reps,
 	    		advertiser_id: o.advertiser_id, agency: o.agency, ioauto: o.ioauto, contracted_deal: o.budget, revised_deal: o.budget, start_date: o.start,
@@ -645,7 +652,6 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 	
 	$scope.create_advertiser = function(rec) {
 		Advertiser.save({advertiser: rec.new_advertiser}, function(){
-			console.log(rec);
 			rec.no_advertiser = false;
 			rec.add_new = false;
 			var q = order_by("id", "asc");

@@ -27,6 +27,8 @@ from sanetime import time
 from werkzeug.urls import Href
 import requests
 
+import csv
+
          
  
 #def jsonify(data): 
@@ -50,6 +52,18 @@ def get_or_create(session, model, **kwargs):
                 instance = model(**kwargs)
                 session.add(instance)
                 return instance
+
+def get_or_none(session, model, **kwargs):
+    for name, value in kwargs.items():
+        if value is None or value == "":
+            return None
+        else:
+            instance = session.query(model).filter_by(**kwargs).first()
+            if instance:
+                return instance
+            else:
+                return None
+
 
 def get_date_or_none(entry):
     my_date = None
@@ -262,6 +276,13 @@ class Channel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     channel = db.Column(db.Unicode, unique=True)   
          
+class Channelmapping(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    salesforce_channel = db.Column(db.Unicode)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
+    channel = db.relationship('Channel')
+    countrycode = db.Column(db.Unicode)
+         
 class Industry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sic = db.Column(db.Integer)
@@ -316,8 +337,10 @@ class Rep(db.Model):
     department = db.Column(db.Unicode)
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
     channel = db.relationship('Channel')
-    manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    manager = db.relationship('Rep', remote_side=[id])
+    territory = db.Column(db.Unicode)
+    manager = db.Column(db.Unicode)
+    #manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    #manager = db.relationship('Rep', remote_side=[id])
     type = db.Column(db.Unicode)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     product = db.relationship('Product')
@@ -523,6 +546,15 @@ def strptime_or_none(mydate):
         return None
     else:
         return D.strptime(mydate,'%Y-%m-%d').date()
+
+
+def write_channels(sf):
+    with open('channels.csv', 'wb') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=' ', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+        for row in sf.query("SELECT IO.SalesChannel__c FROM Insertion_Order__c IO WHERE IO.SalesChannel__c <> null ORDER BY IO.SalesChannel__c"):
+            sales_channel = row['SalesChannel__c']
+            spamwriter.writerow(sales_channel)
+            
 
 
 
@@ -788,6 +820,18 @@ def populateChannel(wb):
     print("PopulateChannel Finished")
     
 
+def populateChannelmapping(wb):
+    sh = wb.sheet_by_name('Channelmapping')
+    for rownum in range(1,35):
+        sfdc = sh.cell(rownum,0).value
+        channel = get_or_none(db.session, Channel, channel = sh.cell(rownum,1).value)
+        country = sh.cell(rownum,2).value
+        c = Channelmapping(channel = channel, salesforce_channel = sfdc, countrycode = country)
+        db.session.add(c)
+        db.session.commit()
+    print("PopulateChannelMapping finished")
+    
+
 def populateParent(wb):         
     sh = wb.sheet_by_name('Parents')   
     for rownum in range(3,1230):
@@ -819,7 +863,7 @@ def populateAdvertiser(wb):
     
 def populateRep(wb):  
     sh = wb.sheet_by_name('RepID')     
-    for rownum in range(1, 92):
+    for rownum in range(1, 134):
         repID = sh.cell(rownum,0).value
         last_name = sh.cell(rownum,1).value
         first_name = sh.cell(rownum,2).value
@@ -831,22 +875,26 @@ def populateRep(wb):
         seller = bool(sh.cell(rownum,6).value)
         department = sh.cell(rownum,7).value  
         channel = db.session.query(Channel).filter_by(channel = sh.cell(rownum,8).value).first()  
-        try:
-            mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,9).value).first()
-        except:
-            mgr = None                      
+        mgr = sh.cell(rownum,9).value
+        territory = sh.cell(rownum,12).value
+        if territory == '':
+            territory = None
+        #try:
+        #    mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,9).value).first()
+        #except:
+        #    mgr = None                      
         mytype = sh.cell(rownum,10).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,11).value)
         a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, termination_date = termination_date,
-                seller = seller, department = department, channel = channel, manager = mgr, type=mytype, product=product)
+                seller = seller, department = department, channel = channel, manager = mgr, type=mytype, product=product, territory = territory)
         db.session.add(a)
         db.session.commit()
     print("PopulateRep Finished") 
 
 
 def populateCampaignRevenue(wb):         
-    sh = wb.sheet_by_name('Rev032813_574')
-    for rownum in range(2,5890): #sh.nrows):
+    sh = wb.sheet_by_name('Rev041513_581')
+    for rownum in range(2,6153): #sh.nrows):
         campaign = sh.cell(rownum,13).value
         print(campaign)
         date_created = D.now()
@@ -1141,6 +1189,7 @@ print(json.dumps(list(res), indent=2))
 db.create_all()   
 wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData03212013.xls')
 #populateChannel(wb)
+#populateChannelmapping(wb)
 #populateProduct(wb)
 #populateParent(wb)
 #populateAdvertiser(wb)
@@ -1155,7 +1204,7 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #ac = get_newsfdc(sf)
 
 
-
+#ac = write_channels(sf)
 
 #import pdb; pdb.set_trace()
 

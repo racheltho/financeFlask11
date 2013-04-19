@@ -4,7 +4,7 @@
   ORDER by similarity(A.advertiser, 'Seagate Recovery Services') DESC
   LIMIT 3;
 
-CREATE EXTENSION pg_trgm
+CREATE EXTENSION pg_trgm;
 
 
 SELECT * FROM Campaign ORDER BY advertiser_id
