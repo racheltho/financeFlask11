@@ -10,6 +10,13 @@ CREATE INDEX booked_campid_index ON booked (campaign_id);
 
 CREATE INDEX campaign_chan_index ON campaign (channel_id);
 
+CREATE INDEX rep_lastname_index ON rep (last_name);
+
+CREATE INDEX newsfdc_ioname_index ON newsfdc (ioname);
+
+CREATE INDEX channelmapping_sfchannel_index ON channelmapping (salesforce_channel);
+
+
 CREATE OR REPLACE VIEW ForecastLastWeek AS
 SELECT F.channel_id, forecast, goal, created
 FROM forecastq F
@@ -168,7 +175,7 @@ UNION
   WHERE channel LIKE 'Publisher'
   GROUP BY channel, A.cp, cast (date_part('year', B.date) AS INT)
   ORDER BY channel, A.cp DESC)
-  ORDER BY cpchannel DESC, year ASC;
+  ORDER BY cpchannel, year ASC;
 
   CREATE OR REPLACE VIEW HistoricalCPA AS
 SELECT channel, cast (date_part('year', B.date) AS INT) as year, sum("actualRev") AS Actual

@@ -109,10 +109,19 @@ var parseDate = function(input) {
 	if(!input){ return input; }
 	var parts = input.match(/(\d+)/g);
 	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
+	return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
+	// months are 0-based
+};
+
+var parseDateOld = function(input) {
+	if(!input){ return input; }
+	var parts = input.match(/(\d+)/g);
+	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
 	return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
 	// months are 0-based
 };
 
+/*
 var parseDate1 = function(input) {
 	if(!input){ return input; }
 	var parts = input.match(/(\d+)/g);
@@ -120,7 +129,7 @@ var parseDate1 = function(input) {
 	return new Date(parts[0], parts[1] - 1, parts[2] - 5);
 	// months are 0-based
 };
-
+*/
 var sameDates = function(date1, date2) {
 	return ((date1.getFullYear() == date2.getFullYear()) && (date1.getMonth() == date2.getMonth()) && (date1.getDate() == date2.getDate()));
 }

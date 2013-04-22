@@ -21,7 +21,6 @@ var CampaignApp = angular.module("CampaignApp", ["ngResource", "ui"]).
            when('/history/:campaignId', { controller: CampHistoryCtrl, templateUrl: 'camp_history.html' }).
            when('/editforecast', { controller: EditForecastCtrl, templateUrl: 'edit_forecast.html' }).
            when('/viewforecast', { controller: ViewForecastCtrl, templateUrl: 'view_forecast.html' }).
-           when('/approveIOs2', {controller: ApproveIOs2Ctrl, templateUrl: 'approveIOs2.html'}).
            when('/newIOs', {controller: NewIOsCtrl, templateUrl: 'newIOs.html'}).
            otherwise({ redirectTo: '/' });
     });     
@@ -216,21 +215,23 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 		if($scope.item.bookeds.length > 5){
 			document.getElementById("bookedclass").setAttribute("class", "span12");
 			document.getElementById("actualclass").setAttribute("class", "span12");
-			document.getElementById("tempclass").setAttribute("class", "span12");
 		}
 	};
 	
 	$scope.update_campaign_calcs = function() {
-		$scope.calc_start = parseDate($scope.item.start_date);
-        $scope.calc_end = parseDate($scope.item.end_date);
+		console.log($scope.item.start_date);
+		$scope.calc_start = parseDateOld($scope.item.start_date);
+        $scope.calc_end = parseDateOld($scope.item.end_date);
+        $scope.item.start_date = parseDateOld($scope.item.start_date);
+        $scope.item.end_date = parseDateOld($scope.item.end_date);
         $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
         $scope.item.bookeds = $scope.item.bookeds || [];
         $scope.item.actuals = $scope.item.actuals || [];
 	    $.map($scope.item.bookeds, function(val, i) {
-	    	val.date = parseDate(val.date);
+	    	val.date = parseDateOld(val.date);
 	    });
 	    $.map($scope.item.actuals, function(val, i) {
-	    	val.date = parseDate(val.date);
+	    	val.date = parseDateOld(val.date);
 	    });
 	    $scope.item.bookeds = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds, "bookedRev");
 	    $scope.item.actuals = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.actuals, "actualRev");
@@ -405,140 +406,6 @@ var EditCtrl = function ($scope, $location, $routeParams, Campaign, Campaignchan
 EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 
-var ApproveIOs2Ctrl = function($scope, $routeParams, $location, $http, $q, Sfdc, Sfdccampaign, Advertiser, Rep) {
-	var make_query = function() {
-        	var q = order_by("start_date", "asc");
-            q.filters = [{name: "approved", op: "eq", val: false}];
-            if($scope.query) {q.filters.push({name: "ioname", op: "ilike", val: "%" + $scope.query + "%"});}
-        	return angular.toJson(q);
-	};
-    	
-    $scope.show_name = function(last, first) {
-    	if (last) {return last + ', ' + first;}
-    	return "";
-    };
-    
-    $scope.search = function () {
-        var res = Sfdccampaign.get(
-            { page: $scope.page, q: make_query(), results_per_page: 20 },
-            function () {
-                $scope.no_more = res.page === res.total_pages;
-                if (res.page===1) { $scope.sfdc_camps=[]; }
-                $scope.sfdc_camps = $scope.sfdc_camps.concat(res.objects);
-                $.each($scope.sfdc_camps, function(i,o){
-                	if(o.advertiser_id){
-                		Advertiser.get({id: o.advertiser_id}, function(item){
-                			o.advertisername = item.advertiser;
-                		});
-                	}
-                	$http.get('/api/sfdc_adver/' + o.sadvertiser).success(function(data2){
-						o.select_advertisers_sfdc = data2.res;
-						o.ad_sfdc = o.select_advertisers_sfdc.length;
-					});
-					o.calc_start = parseDate(o.start_date);
-        			o.calc_end = parseDate(o.end_date);
-        			o.calc_deal = o.revised_deal || o.contracted_deal;
-        			o.bookeds = o.bookeds || [];
-	    			$.map(o.bookeds, function(val, i) {
-	    				val.date = parseDate(val.date);
-	    			});
-	    			o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
-	    			o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
-	    			console.log(o);
-				});
-                /*$.each($scope.sfdc_camps, function(i,o){
-                	$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id', 'advertiser_id', 'contracted_deal', 'start_date', 'end_date'], function(i,o) {	
-                		if(data[o]) {$scope.item[o] = data[o];}	
-                	});
-				if (data.rep) {
-					$scope.item.rep = data.rep;
-				}
-	        	$scope.update_campaign_calcs();
-                	
-                });*/
-               	
-            }
-        );
-    };
-
-
-	
-	$scope.approve = function (id) {
-        Sfdc.update({ id: id }, {approved:true}, function () {
-            $('#item_'+id).fadeOut();
-        });
-    };
-
-	$scope.show_more = function () { return !$scope.no_more; };
-
-    $scope.reset = function() {
-        $scope.page = 1;
-        $scope.search();
-    };
- 
-    $scope.reset();
-
-	if ($routeParams.approved) {
-		$scope.approve($routeParams.approved);
-	}
-	
-	
-	/*
-	if ($scope.sfdcid) {
-		$http.get('/api/campaign_from_sfdc/' + $scope.sfdcid).success(function(data) {
-			console.log(data);
-			$.each(['campaign', 'advertiser', 'cp', 'type', 'product_id', 'channel_id',
-				'advertiser_id', 'contracted_deal', 'start_date', 'end_date'],
-				function(i,o) {	if(data[o]) {$scope.item[o] = data[o];}	});
-			if (data.rep) {
-				$scope.item.rep = data.rep;
-			}
-	        $scope.update_campaign_calcs();
-		});
-		Sfdccampaign.get({id: $scope.sfdcid}, function(item){
-			$http.get('/api/sfdc_adver/' + item.advertiser).success(function(data2){
-					$scope.select_advertisers_sfdc = data2.res;
-					$scope.ad_sfdc = $scope.select_advertisers_sfdc.length;
-					console.log($scope.ad_sfdc);
-			});
-		});
-	}*/
-	
-	
-	
-	var getSelectAjax = function(fmt, name, sort_by, minchars, xtra_filters) {
-		return 	{
-			formatSelection: fmt, formatResult: fmt,
-			minimumInputLength: minchars,
-		    ajax: {
-		      url: "/api/" + name,
-		      data: function (term, page) {
-		        var q = order_by(sort_by, "asc");
-		        q.filters = [{name: sort_by, op: "ilike", val: "%" + term + "%"} ];
-		        if (xtra_filters) {	q.filters = q.filters.concat(xtra_filters); }
-		        return {q:angular.toJson(q)};
-		      },
-		      results: function (data) { return {results: data.objects}; }
-		    }/*,
-			initSelection: function(elm, cb) {
-				var id=$(element).val();
-		        if (id==="") {
-		        	return cb(null);
-		        }
-				return cb(id);
-			}*/
-		};
-	};
-	
-	$scope.select_reps = getSelectAjax(function(o) { return o.last_name + ', ' + o.first_name;}, 
-		'rep', 'last_name', 0, {name: "seller", op: "eq", val: true}); 
-	$scope.select_advertisers = getSelectAjax(function(o) { return o.advertiser;}, 
-		'advertiser', 'advertiser', 2);
-	
-}; 
-
-
-
 
 
 var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Campaignchange, Advertiser, Channel, Channelmapping, Rep, Bookedchange) {
@@ -559,8 +426,7 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
     	if (last) {return last + ', ' + first;}
     	return "";
     };
-    
-  
+      
     $scope.search = function () {
         var res = Newsfdc.get(
             { page: $scope.page, q: make_query(), results_per_page: 20 },
@@ -572,20 +438,6 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
                 	$http.get('/api/sfdc_adver/' + o.advertiseracc).success(function(data2){
 						o.select_advertisers_sfdc = data2.res;
 						o.ad_sfdc = o.select_advertisers_sfdc.length;
-					});
-					
-					var q = order_by('last_name', 'asc');
-					var ownerstring = o.owner_first + "%";
-        			q.filters = [{name: "last_name", op: "ilike", val: o.owner_last}, {name:"first_name", op: "ilike", val: ownerstring}];
-					Rep.get({q: angular.toJson(q)}, function (item) {
-						o.my_rep = item.objects[0];
-					});
-					
-					var q2 = order_by('salesforce_channel', 'asc');
-        			q2.filters = [{name: "salesforce_channel", op: "ilike", val: o.saleschannel}];
-					Channelmapping.get({q: angular.toJson(q2)}, function (item) {
-						o.channel = item.objects[0].channel;
-						console.log(o.channel);
 					});
 					
 					o.calc_start = parseDate(o.start);
@@ -621,9 +473,9 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 		    		var now = new Date();
     	    		var today = $.datepicker.formatDate('yy-mm-dd', now); 
         			var q = order_by("change_date", "asc");
-        			if(o.my_rep.id !== ""){ 
+        			if(o.rep.id !== ""){ 
         				o.reps = [];
-        				o.reps.push(o.my_rep);
+        				o.reps.push(o.rep);
         				Campaign.update({id: item.id}, {rep: o.reps});
         				}   			
 	    			Campaignchange.save({campaign_id: item.id, change_date : today, start_date: o.start, 
@@ -634,16 +486,6 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 	    		//$location.path(path); 
 	    	});
 	    });		
-	};
-
-	
-	$scope.add_rep = function() {
-		if (!$scope.new_rep) {return;}
-		var reps = $scope.item.rep;
-		var new_rep = $scope.new_rep;
-		if(_.find(reps, function(o) {return o.id === new_rep.id.toString();})) { return; }
-		$scope.item.rep.push(new_rep);
-		$scope.new_rep = "";
 	};
 
 	$scope.add_advertiser = function(rec) {
@@ -662,32 +504,7 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 		});
 	};
 
-	$scope.delete_rep = function(rep) {
-		if (!rep) {return;}
-		var reps = $scope.item.rep;
-		var idx = reps.indexOf(rep);
-		if (idx<0) {return;}
-		$scope.item.rep.splice(idx,1);
-		$('#rep_' + rep.id).fadeOut();
-	};
-		
-	$scope.get_from_rep = function(item){
-		if (!item) {return;}
-    	if (item.product_id) {
-        	Product.get( {id: item.product_id}, function(p) {
-	        	if(p) {$scope.item.product_id = p.id;}
-        	});
-        }
 
-    	if (item.channel_id) {
-    		Channel.get( {id: item.channel_id}, function(c) {
-	        	if(c) {$scope.item.channel_id = c.id;}
-	        });
-        }
-    	$scope.item.type = item.type;
-	};
-	
-	
 	$scope.show_more = function () { return !$scope.no_more; };
 
     $scope.reset = function() {

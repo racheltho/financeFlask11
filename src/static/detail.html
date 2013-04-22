@@ -106,13 +106,13 @@
     <div class="control-group" ng-class="{error: detailForm.start.$invalid}">
         <label class="control-label" for="start">Start Date</label>
         <div class="controls">
-            <input type="text" ui-date  ui-date-format="yy-mm-dd" ng-model="item.start_date" id="start" placeholder="Date" />
+            <input type="text" ui-date  ng-model="item.start_date" id="start" placeholder="Date" />
         </div>
     </div>
     <div class="control-group" ng-class="{error: detailForm.end.$invalid}">
         <label class="control-label" for="end_date">End Date</label>
         <div class="controls">
-            <input type="text" ui-date ui-date-format="yy-mm-dd" ng-model="item.end_date" id="end_date" placeholder="Date" />
+            <input type="text" ui-date ng-model="item.end_date" id="end_date" placeholder="Date" />
         </div>
     </div>
        <div class="control-group" ng-class="{error: detailForm.contracted_impr.$invalid}">

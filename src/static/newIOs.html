@@ -25,8 +25,8 @@
             <td> {{rec.pricing}} </td>
             <td> {{rec.saleschannel }} </td>
             <td> {{show_name(rec.owner_last, rec.owner_first) }} </td>
-            <td> {{rec.start | date:'MM/dd/yy' }} </td>
-            <td> {{rec.end | date:'MM/dd/yy' }} </td>
+            <td> {{rec.calc_start | date:'MM/dd/yy' }} </td>
+            <td> {{rec.calc_end | date:'MM/dd/yy' }} </td>
             <td> {{rec.budget | number:0 }} </td>
             <td></td><td></td>
         </tr>
@@ -55,13 +55,13 @@
             		<option></option>
             		<option ng-repeat="c in select_channels" value="{{c.id}}">{{c.channel}}</option>
             </select> </td>
-    	        <td> <select ui-select2 id="rep" ng-model="rec.my_rep.id" style="width:180px;" data-placeholder="-- Select One --">
+    	        <td> <select ui-select2 id="rep" ng-model="rec.rep.id" style="width:180px;" data-placeholder="-- Select One --">
     	        	<option></option>
     	        	<option ng-repeat="r in select_reps" value="{{r.id}}">{{ r.last_name + ', ' + r.first_name }}</option>
     	        </td>
     	        <!--<td><input type="text" value="{{rec.my_rep.last_name + ', ' + rec.my_rep.first_name}}" disabled /></td>-->
-            	<td> <input class="input-small" type="text" ui-date ui-date-format="yy-mm-dd" ng-model="rec.start" placeholder="Date" /> </td>
-            	<td> <input class="input-small" type="text" ui-date ui-date-format="yy-mm-dd" ng-model="rec.end" placeholder="Date" /> </td>
+            	<td> <input class="input-small" type="text" ui-date ng-model="rec.calc_start" placeholder="Date" /> </td>
+            	<td> <input class="input-small" type="text" ui-date ng-model="rec.calc_end" placeholder="Date" /> </td>
             	<td> <input class="input-small" type="text" ng-model="rec.budget" /></td>
             	<td><button ng-click="calculate(rec)" class="btn btn-primary">Calc</button></td>
             </tr>

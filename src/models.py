@@ -476,6 +476,10 @@ class Newsfdc(db.Model):
     sfdc_date_created = db.Column(db.Date)
     date_created = db.Column(db.Date)
     approved = db.Column(db.Boolean)
+    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
+    rep = db.relationship('Rep')
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
+    channel = db.relationship('Channel')
 
 
     
@@ -484,10 +488,6 @@ class Sfdc(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     oid = db.Column(db.Integer)
     ioname = db.Column(db.Unicode)
-#    country = db.Column(db.Unicode)
-#    signedIO = db.Column(db.Unicode)
-#    setUp = db.Column(db.Unicode)
-##    sfdc_agency = db.Column(db.Unicode)
     cp = db.Column(db.Unicode)
     channel = db.Column(db.Unicode)
     advertiser = db.Column(db.Unicode)
@@ -626,64 +626,38 @@ def get_newsfdc(sf):
         sf_owner_first = None
         if(sf_owner):
             owner_temp = sf_owner['Name']
-            last = re.search('[A-Z][a-z]*$', owner_temp)
+            last = re.search('[A-Z][a-z][A-Z]?[a-z]*$', owner_temp)
             sf_owner_last = last.group()
-            if(sf_owner_last == "Pigeon"):
-                sf_owner_first = "Matt"
-            else:
-                if(sf_owner_last == "Bartlett"):
-                    sf_owner_last = "Vinco"
-                    sf_owner_first = "Valerie"
+            first = re.search('^[A-Z][a-z]*', owner_temp)
+            sf_owner_first = first.group()
+            if(sf_owner_last == "Bartlett"):
+                sf_owner_last = "Vinco"
+                sf_owner_first = "Valerie"
+            r = s.query(Rep).filter_by(last_name = sf_owner_last, first_name = sf_owner_first).first()
+            if(r is None):
+                r = s.query(Rep).filter_by(last_name = sf_owner_last).all()
+                if(len(r)==1):
+                    r = r[0]
                 else:
-                    first = re.search('^[A-Z][a-z]*', owner_temp)
-                    sf_owner_last = last.group()
-                    sf_owner_first = first.group()
-        
-        
+                    r = None
+        else:
+            r = None
+        cm = s.query(Channelmapping).filter_by(salesforce_channel = sf_saleschannel).first()
+        if(cm is not None):
+            channel = cm.channel
+       
 
 
         a = Newsfdc(opid = sf_opid, ioauto = sf_ioauto, optype = sf_optype, dealtype = sf_dealtype, saleschannel = sf_saleschannel, advertiseracc = sf_advertiseracc, opname = sf_opname,
                     ioname = sf_ioname, campname = sf_campname, salesplanner = sf_salesplanner, pricing = sf_pricing, start = sf_start, end = sf_end, setup = sf_setup, opindustry = sf_opindustry,
                     totalcampbudget = sf_totalcampbudg, budget = sf_budget, signedio = sf_signedio, geo = sf_geo, arledger = sf_arledger, erpsync = sf_erpsync, oracle = sf_oracle, invoiceemail = sf_invoice, 
-                    owner_last = sf_owner_last, owner_first = sf_owner_first, date_created = D.now(), sfdc_date_created = sf_created, agency = sf_agency, approved = False)
+                    owner_last = sf_owner_last, owner_first = sf_owner_first, date_created = D.now(), sfdc_date_created = sf_created, agency = sf_agency, approved = False,
+                    channel = channel, rep = r)
         s.add(a)
         s.commit()
 
 
-#        sf_ioname = row['Name']
-#        sf_channel = row['SalesChannel__c']
-#        sf_budget = row['Budget__c']
-#        
-#        sf_cp = row['Opportunity__r']['Rate_Type__c']
-#        
-#        start_date = row['Opportunity__r']['CampaignStart__c']
-#        end_date = row['Opportunity__r']['CampaignEnd__c']
-#        last_mod_temp = row['Opportunity__r']['LastModifiedDate']
-#        sf_last_modified = None
-#        if(last_mod_temp):
-#            last_modified = last_mod_temp[0:10]
-#            sf_last_modified = strptime_or_none(last_modified)
-#    
-#        sf_start_date = strptime_or_none(start_date)
-#        sf_end_date = strptime_or_none(end_date)
-#        
-#        
-#        agency_r = row['Opportunity__r']['Agency__r']
-#        sf_agencyname = None
-#        if(agency_r):
-#            sf_agencyname = agency_r['Name']
-#       
-#
-#        advertiser = row['Advertiser_Account__r']
-#        sf_advertiser = None
-#        sf_currency = None
-#        if(advertiser):
-#            sf_advertiser = advertiser['Name']
-#            sf_currency = advertiser['CurrencyIsoCode']
-
-        
-
-
+    
 def sfdc_from_sfdc(sf):
     s = db.session
     for row in sf.query("""SELECT IO.id, op.Opportunity_ID__c, IO.rtbid__c, aa.Type, op.Type, IO.SalesChannel__c, IO.Advertiser_Account__c, op.Agency__c, op.Name, IO.Name, op.SalesPlanner__c, op.Rate_Type__c, 
@@ -893,7 +867,7 @@ def populateRep(wb):
 
 
 def populateCampaignRevenue(wb):         
-    sh = wb.sheet_by_name('Rev041513_581')
+    sh = wb.sheet_by_name('Rev041813_585')
     for rownum in range(2,6153): #sh.nrows):
         campaign = sh.cell(rownum,13).value
         print(campaign)
@@ -1187,7 +1161,7 @@ print(json.dumps(list(res), indent=2))
 
 #DropDB()
 db.create_all()   
-wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData03212013.xls')
+wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData04222013.xls')
 #populateChannel(wb)
 #populateChannelmapping(wb)
 #populateProduct(wb)
@@ -1200,7 +1174,7 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #readSFDCexcel()
 
 
-#sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
+
 #ac = get_newsfdc(sf)
 
 
