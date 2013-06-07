@@ -1,5 +1,6 @@
 "use strict";
 
+// Return an array of each month from start to end, containing the 1st of that month
 var mths = function(start, end) {
 	if(!start || !end){ return [];}
 	var d = [];
@@ -49,10 +50,10 @@ var active_days = function(st_date, end_date) {
 	var n = months.length;
 	var active = {};
 	var month_day_array = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-	active[months[0]] = month_day_array[st_date.getMonth()] - st_date.getUTCDate() + 1;
+	active[months[0]] = month_day_array[st_date.getMonth()] - st_date.getDate() + 1;
 	// days in start month
 	if (n > 1) {
-		active[months[n - 1]] = end_date.getUTCDate();
+		active[months[n - 1]] = end_date.getDate();
 		// days in end month
 	}
 	if (n > 2) {
@@ -101,35 +102,21 @@ var calc_sl = function(st_date, end_date, rev, booked_or_actual, budget) {
 
 var date_array = function(arr) {
 	return $.map(arr, function(o) {
+//		return new Date(o + ' 00:00:00 UTC');
 		return new Date(o);
 	});
 };
 
-var parseDate = function(input) {
+// convert string containing a yyyy-mm-dd to a local date
+var stringToDate = function(input) {
 	if(!input){ return input; }
 	var parts = input.match(/(\d+)/g);
 	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
-	return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
-	// months are 0-based
-};
-
-var parseDateOld = function(input) {
-	if(!input){ return input; }
-	var parts = input.match(/(\d+)/g);
-	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
+//	return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
 	return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
 	// months are 0-based
 };
 
-/*
-var parseDate1 = function(input) {
-	if(!input){ return input; }
-	var parts = input.match(/(\d+)/g);
-	// new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
-	return new Date(parts[0], parts[1] - 1, parts[2] - 5);
-	// months are 0-based
-};
-*/
 var sameDates = function(date1, date2) {
 	return ((date1.getFullYear() == date2.getFullYear()) && (date1.getMonth() == date2.getMonth()) && (date1.getDate() == date2.getDate()));
 }

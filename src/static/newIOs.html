@@ -6,7 +6,7 @@
     	<th class="limitwidth">IO Name</th>
     	<th class="limitwidth">Camp Name</th>
     	<th>Advertiser</th>
-    	<th></th>
+    	<th>Agency</th>
     	<th>CPA/CPM</th>
     	<th>Channel</th>
     	<th>Rep Name</th>
@@ -21,7 +21,7 @@
             <td class="limitwidth"> {{rec.ioname}} </td>
             <td class="limitwidth"> {{rec.campname}} </td>
             <td> {{rec.advertiseracc}} </td>
-            <td></td>
+            <td> {{rec.agency}} </td>
             <td> {{rec.pricing}} </td>
             <td> {{rec.saleschannel }} </td>
             <td> {{show_name(rec.owner_last, rec.owner_first) }} </td>
@@ -38,14 +38,17 @@
         	    	<option></option>
     				<option ng-repeat="a in rec.select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option> </select>
     			</td>
-          	 	<td ng-show="rec.ad_sfdc==1"> <select ui-select2 ng-model="rec.advertiser2_id" style="width:150px;">
+    			<td ng-show="rec.ad_sfdc==1"> <select ui-select2 ng-model="rec.advertiser2_id" style="width:150px;">
     				<option ng-repeat="a in rec.select_advertisers_sfdc" value="{{a.id}}">{{a.advertiser}}</option> </select>
     			</td>
     			
-    			<td ng-show="!rec.ad_sfdc"> <input ui-select2="select_advertisers" ng-model="rec.advertiser3" data-placeholder="-- Select one --" /></td>	
+    			<td ng-show="rec.one_sfdc==1"> <select ui-select2 ng-model="rec.advertiser2.id" style="width:150px;">
+    				<option value="{{rec.advertiser2.id}}">{{rec.advertiser2.advertiser}}</option> </select>
+    			</td>
+    			<td ng-show="!rec.ad_sfdc && !rec.one_sfdc"> <input ui-select2="select_advertisers" style="width:150px;" ng-model="rec.advertiser3" data-placeholder="-- Select one --" /></td>	
     			
-    			<td><button class="btn-small" ng-click="add_advertiser(rec)">Add new</button></td>
-    			
+    			<td><button class="btn-small" ng-click="add_advertiser(rec)">New Adv</button></td>
+
             	<td> <select ui-select2 ng-model="rec.pricing" id="cp" style="width:70px;" data-placeholder="-- Select One --">
             		<option></option>
             		<option value="CPA">CPA</option>

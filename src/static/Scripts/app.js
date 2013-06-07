@@ -220,18 +220,18 @@ var DetailsBaseCtrl = function($scope, $location, $routeParams, Campaign, Rep, A
 	
 	$scope.update_campaign_calcs = function() {
 		console.log($scope.item.start_date);
-		$scope.calc_start = parseDateOld($scope.item.start_date);
-        $scope.calc_end = parseDateOld($scope.item.end_date);
-        $scope.item.start_date = parseDateOld($scope.item.start_date);
-        $scope.item.end_date = parseDateOld($scope.item.end_date);
+		$scope.calc_start = stringToDate($scope.item.start_date);
+        $scope.calc_end = stringToDate($scope.item.end_date);
+        $scope.item.start_date = stringToDate($scope.item.start_date);
+        $scope.item.end_date = stringToDate($scope.item.end_date);
         $scope.calc_deal = $scope.item.revised_deal || $scope.item.contracted_deal;
         $scope.item.bookeds = $scope.item.bookeds || [];
         $scope.item.actuals = $scope.item.actuals || [];
 	    $.map($scope.item.bookeds, function(val, i) {
-	    	val.date = parseDateOld(val.date);
+	    	val.date = stringToDate(val.date);
 	    });
 	    $.map($scope.item.actuals, function(val, i) {
-	    	val.date = parseDateOld(val.date);
+	    	val.date = stringToDate(val.date);
 	    });
 	    $scope.item.bookeds = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.bookeds, "bookedRev");
 	    $scope.item.actuals = calc_rev($scope.calc_start, $scope.calc_end, $scope.item.actuals, "actualRev");
@@ -407,7 +407,6 @@ EditCtrl.prototype = Object.create(DetailsBaseCtrl.prototype);
 
 
 
-
 var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, Campaign, Campaignchange, Advertiser, Channel, Channelmapping, Rep, Bookedchange) {
 	var get_sel_list = function(model, field, ngmodel_fld) {
 		var q = order_by(field, "asc");
@@ -429,25 +428,32 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
       
     $scope.search = function () {
         var res = Newsfdc.get(
-            { page: $scope.page, q: make_query(), results_per_page: 20 },
+            { page: $scope.page, q: make_query(), results_per_page: 15 },
             function () {
                 $scope.no_more = res.page === res.total_pages;
                 if (res.page===1) { $scope.newsfdcs =[]; }
                 $scope.newsfdcs = $scope.newsfdcs.concat(res.objects);
                 $.each($scope.newsfdcs, function(i,o){
-                	$http.get('/api/sfdc_adver/' + o.advertiseracc).success(function(data2){
-						o.select_advertisers_sfdc = data2.res;
-						o.ad_sfdc = o.select_advertisers_sfdc.length;
+                  	var q = order_by("id", "asc");
+    	    		q.filters = [{name: "advertiser", op: "like", val: o.advertiseracc}];
+					Advertiser.get({q: angular.toJson(q)}, function (item) {
+                		if(item.objects.length > 0){
+                			o.advertiser2 = item.objects[0];
+                			o.one_sfdc = 1;
+                		}else{
+                			$http.get('/api/sfdc_adver/' + o.advertiseracc).success(function(data2){
+								o.select_advertisers_sfdc = data2.res;
+								o.ad_sfdc = o.select_advertisers_sfdc.length;
+							});
+						}
 					});
-					
-					o.calc_start = parseDate(o.start);
-        			o.calc_end = parseDate(o.end);
+					o.calc_start = stringToDate(o.start);
+        			o.calc_end = stringToDate(o.end);
         			o.bookeds = [];
         			if(o.calc_start !== null && o.calc_end !== null){
 	    				$.map(o.bookeds, function(val, i) {
-	    					val.date = parseDate(val.date);
+	    					val.date = stringToDate(val.date);
 	    				});
-	    				o.bookeds = calc_rev(o.calc_start, o.calc_end, o.bookeds, "bookedRev");
 	    				o.bookeds = calc_sl(o.calc_start, o.calc_end, o.bookeds, "bookedRev", o.budget);
 					}
 				});
@@ -468,8 +474,8 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
         	o.reps = [];
         	
 	    	Campaign.save({date_created: o.now, campaign: o.ioname, cp: o.pricing, product_id: o.product_id, channel_id: o.channel_id, rep: o.reps,
-	    		advertiser_id: o.advertiser_id, agency: o.agency, ioauto: o.ioauto, contracted_deal: o.budget, revised_deal: o.budget, start_date: o.start,
-	    		end_date: o.end}, function(item) {
+	    		advertiser_id: o.advertiser_id, agency: o.agency, ioauto: o.ioauto, sfdc_ioid: o.ioid, sfdc_oid: o.opid, contracted_deal: o.budget, 
+	    		revised_deal: o.budget, start_date: o.start, end_date: o.end}, function(item) {
 		    		var now = new Date();
     	    		var today = $.datepicker.formatDate('yy-mm-dd', now); 
         			var q = order_by("change_date", "asc");
@@ -489,17 +495,21 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 	};
 
 	$scope.add_advertiser = function(rec) {
-		rec.add_new = true;		
+		rec.add_new = true;	
 	};
 	
 	$scope.create_advertiser = function(rec) {
 		Advertiser.save({advertiser: rec.new_advertiser}, function(){
+			rec.ad_sfdc = 0;
 			rec.no_advertiser = false;
 			rec.add_new = false;
 			var q = order_by("id", "asc");
     	    q.filters = [{name: "advertiser", op: "like", val: rec.new_advertiser}];
 			Advertiser.get({q: angular.toJson(q)}, function (item) {
 				rec.advertiser = item.objects[0];
+				rec.advertiser1_id = rec.advertiser.id;
+				rec.advertiser2_id = rec.advertiser.id;
+				rec.advertiser3 = rec.advertiser;
 			});
 		});
 	};
@@ -519,10 +529,11 @@ var NewIOsCtrl = function($scope, $routeParams, $location, $http, $q, Newsfdc, C
 	}
 	
 	$scope.calculate = function(rec) {
-		console.log(rec);
-		rec.calc_start = parseDate(rec.start);
-        rec.calc_end = parseDate(rec.end);
+		rec.calc_start = stringToDate(rec.start);
+        rec.calc_end = stringToDate(rec.end);
+        console.log(rec.bookeds);
 		rec.bookeds = calc_sl(rec.calc_start, rec.calc_end, rec.bookeds, "bookedRev", rec.budget);
+		console.log(rec.bookeds);
 	};
 		
 		

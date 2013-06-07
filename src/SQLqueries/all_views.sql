@@ -17,6 +17,8 @@ CREATE INDEX newsfdc_ioname_index ON newsfdc (ioname);
 CREATE INDEX channelmapping_sfchannel_index ON channelmapping (salesforce_channel);
 
 
+
+
 CREATE OR REPLACE VIEW ForecastLastWeek AS
 SELECT F.channel_id, forecast, goal, created
 FROM forecastq F
