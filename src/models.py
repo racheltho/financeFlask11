@@ -30,10 +30,6 @@ import requests
 
 import csv
 
-         
- 
-#def jsonify(data): 
-#    return Response(json.dumps(data, cls=APIEncoder),  mimetype='application/json')
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = flask.Flask(__name__)
@@ -318,14 +314,6 @@ class Advertiser(db.Model):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-"""
-class Association(db.Model):
-    id = db.Column(db.Integer, primary_key=True)   
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'))
-    campaign = db.relationship('Campaign', backref=backref('associations', cascade='all,delete'))
-    rep_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    rep = db.relationship('Rep')
-"""
 
 association_table = db.Table('association', db.Model.metadata,
     db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id', ondelete="CASCADE")),
@@ -346,8 +334,6 @@ class Rep(db.Model):
     channel = db.relationship('Channel')
     territory = db.Column(db.Unicode)
     manager = db.Column(db.Unicode)
-    #manager_id = db.Column(db.Integer, db.ForeignKey('rep.id'))
-    #manager = db.relationship('Rep', remote_side=[id])
     type = db.Column(db.Unicode)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'))
     product = db.relationship('Product')
@@ -414,7 +400,6 @@ class Campaignchange(db.Model):
     end_date = db.Column(db.Date)
     cpm_price = db.Column(db.Float)
     revised_deal = db.Column(db.Float)
-    # Question: Do I want to record type of change?
 
 class Booked(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -501,21 +486,6 @@ class Newsfdc(db.Model):
     channel = db.relationship('Channel')
 
     
-#class Sfdc(db.Model):
-#    id = db.Column(db.Integer, primary_key=True)
-#    oid = db.Column(db.Integer)
-#    ioname = db.Column(db.Unicode)
-#    cp = db.Column(db.Unicode)
-#    channel = db.Column(db.Unicode)
-#    advertiser = db.Column(db.Unicode)
-#    owner_name = db.Column(db.Unicode)
-#    start_date = db.Column(db.Date)
-#    end_date = db.Column(db.Date)
-#    budget = db.Column(db.Float)
-#    currency = db.Column(db.Unicode)
-#    approved = db.Column(db.Boolean)
-    
-    
 class Forecastq(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date)
@@ -539,24 +509,6 @@ class Forecastyear(db.Model):
     ytd = db.Column(db.Float)
 
 
-## Create the database tables.
-#sfdc_table = Sfdc.__table__
-#campaign_table = Campaign.__table__
-#rep_table = Rep.__table__
-#channel_table = Channel.__table__
-#sfdc_campaign_join = sfdc_table.outerjoin(campaign_table, sfdc_table.c.oid == campaign_table.c.sfdc_oid)
-#
-## map to it
-#class Sfdccampaign(db.Model):
-#    __table__ = sfdc_campaign_join
-#    __tablename__ = 'sfdccampaign'
-#    cid = campaign_table.c.id
-#    ccp = campaign_table.c.cp
-#    cstart_date = campaign_table.c.start_date
-#    cend_date = campaign_table.c.end_date
-#    sadvertiser = sfdc_table.c.advertiser
-
-
 def strptime_or_none(mydate):
     if(mydate == None):
         return None
@@ -570,8 +522,7 @@ def write_channels(sf):
         for row in sf.query("SELECT CreatedById,CreatedDate,Field,Id,IsDeleted,NewValue,OldValue FROM Insertion_Order__History IOH WHERE Field = 'Budget__c'  AND CreatedDate >= LAST_WEEK  ORDER BY Field ASC NULLS FIRST  LIMIT 50"):
             sales_channel = row['SalesChannel__c']
             spamwriter.writerow(sales_channel)
-            
-            
+              
             
 def get_changedsfdc(sf):
     s = db.session
@@ -603,9 +554,6 @@ def get_changedsfdc(sf):
                        newvalue_budg = newvalue_budg, oldvalue_budg = oldvalue_budg, parentid = sf_parentid, campaign = sf_campaign)
         s.add(a)
         s.commit()
-
-
-
 
 
 def get_newsfdc(sf):
@@ -643,7 +591,6 @@ def get_newsfdc(sf):
             sf_advertiseracc = re.sub("'", "", temp_ad)
         except:
             sf_advertiseracc = None
-        #sf_opagency = opp_r['Agency__c']
         try:
             sf_opname = opp_r['Name']
         except:
@@ -707,123 +654,7 @@ def get_newsfdc(sf):
                     channel = channel, rep = r)
         s.add(a)
         s.commit()
-
-
     
-# def sfdc_from_sfdc(sf):
-#     s = db.session
-#     for row in sf.query("""SELECT IO.id, op.Opportunity_ID__c, IO.rtbid__c, aa.Type, op.Type, IO.SalesChannel__c, IO.Advertiser_Account__c, op.Agency__c, op.Name, IO.Name, op.SalesPlanner__c, op.Rate_Type__c, 
-#                                 IO.Start_Date__c, IO.End_Date__c, IO.SetUp_Status__c, op.ClientStrategist__c, op.rm_Amount__c, IO.Budget__c, aa.SignedIO__c, aa.AR__c, aa.ERPSyncStatus__c, aa.OracleCustomer__c, 
-#                                 aa.InvoiceDistEmail__c
-#                         FROM Insertion_Order__c IO, IO.Opportunity__r op, op.Agency__r a, IO.Advertiser_Account__r aa
-#                         WHERE op.Id <> null"""):
-# 
-#         #sf_io = row['Insertion_Order__c']
-# 
-# 
-#         sf_ioname = row['Name']
-#         sf_channel = row['SalesChannel__c']
-#         sf_budget = row['Budget__c']
-#         try:
-#             sf_oid = int_or_none(row['Opportunity__r']['Opportunity_ID__c'])
-#         except:
-#             print(row['Opportunity__r'])
-#             print(row['Opportunity__r']['Opportunity_ID__c'])
-#         sf_cp = row['Opportunity__r']['Rate_Type__c']
-#         
-#         start_date = row['Opportunity__r']['CampaignStart__c']
-#         end_date = row['Opportunity__r']['CampaignEnd__c']
-#         last_mod_temp = row['Opportunity__r']['LastModifiedDate']
-#         sf_last_modified = None
-#         if(last_mod_temp):
-#             last_modified = last_mod_temp[0:10]
-#             sf_last_modified = strptime_or_none(last_modified)
-#     
-#         sf_start_date = strptime_or_none(start_date)
-#         sf_end_date = strptime_or_none(end_date)
-#         
-#         
-#         agency_r = row['Opportunity__r']['Agency__r']
-#         sf_agencyname = None
-#         if(agency_r):
-#             sf_agencyname = agency_r['Name']
-#         owner = row['Opportunity__r']['Owner']
-#         sf_owner_name = None
-#         if(owner):
-#             owner_temp = owner['Name']
-#             last = re.search('[A-Z][a-z]*$', owner_temp)
-#             if(last.group() == "Pigeon"):
-#                 sf_owner_name = "Pigeon, Matt"
-#             else:
-#                 first = re.search('^[A-Z][a-z]*', owner_temp)
-#                 sf_owner_name = last.group() + ", " + first.group()
-# 
-#         advertiser = row['Advertiser_Account__r']
-#         sf_advertiser = None
-#         sf_currency = None
-#         if(advertiser):
-#             sf_advertiser = advertiser['Name']
-#             sf_currency = advertiser['CurrencyIsoCode']
-# 
-#         a = Sfdc(oid = sf_oid, channel = sf_channel, sfdc_agency = sf_agencyname, cp = sf_cp, advertiser = sf_advertiser, owner_name = sf_owner_name, start_date = sf_start_date, 
-#                  end_date = sf_end_date, last_modified = sf_last_modified, budget = sf_budget, ioname = sf_ioname, currency = sf_currency, approved = False)
-#         s.add(a)
-#         s.commit()
-# 
-# 
-# def readSFDCexcel():
-#     s = db.session
-#     s.query(Sfdc).delete()
-#     wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SFDC OID Report 1-7-13.xls')
-#     sh = wb.sheet_by_index(0)
-#     for colnum in range(0, sh.ncols):
-#         colname = sh.cell(0, colnum).value
-#         if re.search('Opportunity ID', colname):
-#             oid_index = colnum
-#         if re.search('Channel',colname):
-#             channel_index = colnum
-#         if re.search('Pricing Model', colname):
-#             cp_index = colnum
-#         if re.search('Advertiser',colname):
-#             advertiser_index = colnum
-#         if re.search('Opportunity Owner',colname):
-#             rep_index = colnum   
-#         if re.search('Start Date',colname):
-#             start_index = colnum  
-#         if re.search('End Date',colname):
-#             end_index = colnum  
-#         if re.search('Budget$',colname):
-#             budget_index = colnum
-#         if re.search('Insertion Order',colname):
-#             ioname_index = colnum
-#         if re.search('Currency',colname):
-#             currency_index = colnum
-#     for rownum in range(1,sh.nrows):
-#         oid_val = sh.cell(rownum, oid_index).value
-#         if oid_val is None or oid_val =='':
-#             break
-#         else:
-#             oid = int(oid_val)
-#             channel = sh.cell(rownum, channel_index).value
-#             cp = sh.cell(rownum, cp_index).value
-#             advertiser = sh.cell(rownum, advertiser_index).value
-#             rep_name_temp  = sh.cell(rownum, rep_index).value
-#             last = re.search('[A-Z][a-z]*$', rep_name_temp)
-#             first = re.search('^[A-Z][a-z]*', rep_name_temp)
-#             rep_name = last.group() + ", " + first.group()
-#             start = xldate_as_tuple(sh.cell(rownum,start_index).value,0)[0:3]
-#             py_start = date(*start) + timedelta(days=1)
-#             end = xldate_as_tuple(sh.cell(rownum,end_index).value,0)[0:3]
-#             py_end = date(*end)    
-#             ioname = sh.cell(rownum, ioname_index).value          
-#             budget_val = sh.cell(rownum, budget_index).value
-#             currency = sh.cell(rownum, currency_index).value
-#             if budget_val == '':
-#                 budget_val = None
-#             a = Sfdc(oid=oid, channel=channel, cp=cp, advertiser=advertiser, owner_name = rep_name, start_date = py_start, end_date = py_end, budget = budget_val, ioname=ioname, currency=currency, approved = False)
-#             s.add(a)
-#             s.commit()
-
 
 
 def populateProduct(wb): 
@@ -904,11 +735,7 @@ def populateRep(wb):
         mgr = sh.cell(rownum,9).value
         territory = sh.cell(rownum,12).value
         if territory == '':
-            territory = None
-        #try:
-        #    mgr = db.session.query(Rep).filter_by(repID = sh.cell(rownum,9).value).first()
-        #except:
-        #    mgr = None                      
+            territory = None           
         mytype = sh.cell(rownum,10).value
         product = get_or_create(db.session, Product, product = sh.cell(rownum,11).value)
         a = Rep(repID = repID, last_name = last_name, first_name = first_name, employeeID = employeeID, date_of_hire = date_of_hire, termination_date = termination_date,
@@ -932,7 +759,6 @@ def populateCampaignRevenue(wb):
         channel = get_or_create(db.session, Channel, channel = chan)
         try:
             advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,6).value).first()
-            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
         except:
             advertiser = None
             print(sh.cell(rownum,6).value + " not found")
@@ -1001,7 +827,6 @@ def populateCampaignRevenue(wb):
                 db.session.add(cc)
                 db.session.commit()
 
-            #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
         for colnum in chain(xrange(26,38), xrange(56,68), xrange(88,100)):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
@@ -1049,7 +874,6 @@ def populateCampaignRevenue09(wb):
         product = get_or_create(db.session, Product, product = sh.cell(rownum,0).value)
         try:
             advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,2).value).first()
-            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
         except:
             advertiser = None
             print(sh.cell(rownum,2).value + " not found")
@@ -1087,13 +911,11 @@ def populateCampaignRevenue09(wb):
         else: 
             c = Campaign(campaign = campaign, date_created = date_created, type = t, product = product, channel = channel, advertiser = advertiser, industry = industry, 
                          agency = agency, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, contracted_deal = contracted_deal, revised_deal = revised_deal)    
-            #print(campaign)
             db.session.add(c)
             db.session.commit()
             cc = Campaignchange(campaign = c, change_date = D.now(), start_date = py_start, end_date = py_end, revised_deal = revised_deal)
             db.session.add(cc)
-            db.session.commit()
-        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()     
+            db.session.commit()   
         for colnum in range(20,32):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
@@ -1123,7 +945,6 @@ def populateCampaignRevenue10(wb):
         agency = sh.cell(rownum,16).value
         try:
             advertiser = db.session.query(Advertiser).filter_by(advertiser = sh.cell(rownum,20).value).first()
-            #advertiser = get_or_create(db.session, Advertiser, advertiser = sh.cell(rownum,6).value)
         except:
             advertiser = None
             print(sh.cell(rownum,6).value + " not found")
@@ -1157,13 +978,11 @@ def populateCampaignRevenue10(wb):
         else: 
             c = Campaign(campaign = campaign, date_created = date_created, type = t, product = product, channel = channel, advertiser = advertiser, industry = industry, 
                          agency = agency, rep = [rep], cp = cp, start_date = py_start, end_date = py_end, contracted_deal = contracted_deal, revised_deal = revised_deal)    
-            #print(campaign)
             db.session.add(c)
             db.session.commit()
             cc = Campaignchange(campaign = c, change_date = D.now(), start_date = py_start, end_date = py_end, revised_deal = revised_deal)
             db.session.add(cc)
             db.session.commit()
-        #campaignObj = db.session.query(Campaign).filter_by(campaign = campaign, start_date = py_start, end_date = py_end).first()
         for colnum in range(37,49):
             rev = sh.cell(rownum,colnum).value
             if isinstance(rev,float) and rev != 0.0: 
@@ -1182,38 +1001,10 @@ def populateCampaignRevenue10(wb):
     print("PopulateCampaignRevenue10 Finished") 
 
 
-def cleanDB():
-    s = db.session
-    s.query(Booked).delete()
-    s.query(Actual).delete()
-    s.query(Campaign).delete()    
-    s.commit()
-"""
-    s.query(Rep).delete()
-    s.query(Advertiser).delete()
-    s.query(Parent).delete()
-    s.query(Industry).delete()    
-    s.query(Channel).delete()
-    s.query(Product).delete()
-"""
-
-## XXX Doesn't work
-def DropDB():
-    db.session.execute(a.text('DROP TABLE Product CASCADE')); 
-    db.session.execute(a.text('DROP TABLE Channel CASCADE')); 
-
-
-
-'''
-data = get_sql('SELECT * FROM HistoricalCPM')
-res = pivot_1(data)
-print(json.dumps(list(res), indent=2))
-'''
-
-
-#DropDB()
 db.create_all()   
-wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData04222013.xls')
+
+# Uncomment these to populate database initially
+#wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricData04222013.xls')
 #populateChannel(wb)
 #populateChannelmapping(wb)
 #populateProduct(wb)
@@ -1223,25 +1014,13 @@ wb = xlrd.open_workbook('C:/Users/rthomas/Desktop/DatabaseProject/SalesMetricDat
 #populateCampaignRevenue10(wb)
 #populateCampaignRevenue(wb)
 #populateCampaignRevenue09(wb)
-#readSFDCexcel()
 
-
+# Uncomment these once a week to read new and changed flights from SalesForce into the database
 #sf = Salesforce(username='rthomas@quantcast.com', password='qcsales', security_token='46GSRjDDmh9qNxlDiaefAhPun')
 #ac = get_changedsfdc(sf)
 #ac = get_newsfdc(sf)
-
 #ac = write_channels(sf)
 
-#import pdb; pdb.set_trace()
 
-
-
-"""
-s = db.session
-sql = a.text('SELECT * FROM BookedRevenue')
-res = s.execute(sql);
-data =  res.fetchall()
-print json.dumps([dict(d) for d in data])
-"""
 
 print("Leaving models.py")
